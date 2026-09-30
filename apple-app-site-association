@@ -1,0 +1,18 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": [
+          "6B62X8D275.com.scriptcraft.scriptcraft"
+        ],
+
+        "components": [
+          {
+            "/": "*",
+            "comment": "Allow all links"
+          }
+        ]
+      }
+    ]
+  }
+}
