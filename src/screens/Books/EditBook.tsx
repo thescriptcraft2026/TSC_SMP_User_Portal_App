@@ -20,6 +20,8 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 import AuthHeader from '../../components/Header/AuthHeader';
 import ImageUploader from '../../components/ImageUploader/ImageUploader';
 import FloatingInputTwo from '../../components/Input/FloatingInputTwo';
+import CharacterCount from '../../components/Input/CharacterCount';
+import { Limits } from '../../constants/Limits';
 import FloatingDropdown from '../../components/DropDown/FloatingDropdown';
 import PrimaryButton from '../../components/Buttons/PrimaryButton';
 import TagInput from '../../components/Input/TagInput';
@@ -199,12 +201,16 @@ const EditBook = () => {
             control={control}
             name="title"
             render={({ field: { onChange, value } }) => (
+              <>
               <FloatingInputTwo
                 label="Title"
                 value={value}
                 onChangeText={onChange}
                 error={errors.title?.message}
+                maxLength={Limits.TitleMax}
               />
+              <CharacterCount value={value} limit={Limits.TitleMax} />
+              </>
             )}
           />
 
@@ -253,6 +259,7 @@ const EditBook = () => {
             control={control}
             name="content"
             render={({ field: { onChange, value } }) => (
+              <>
               <FloatingInputTwo
                 label="Content"
                 value={value}
@@ -260,6 +267,8 @@ const EditBook = () => {
                 multiline
                 height={160}
               />
+              <CharacterCount value={value} limit={Limits.ContentMin} />
+              </>
             )}
           />
         </View>

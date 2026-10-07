@@ -41,6 +41,23 @@ export const themeColors: Record<string, ColorValue> = {
   inputBackgroundDark: '#1c1c1e',
   inputBackgroundLight: '#f1f1f3',
 
+  // ===== Success / gold accents =====
+  gold: '#E59319',
+  goldLight: '#E8B766',
+  goldMid: '#CF9544',
+  goldDark: '#B87F33',
+  goldRing: 'rgba(90, 60, 20, 0.45)',
+  goldBorder: 'rgba(229, 147, 25, 0.25)',
+  goldBorderStrong: 'rgba(229, 147, 25, 0.45)',
+  onGold: '#1a1209',
+  mutedText: '#a8a39a',
+  mutedTextDim: '#9a958c',
+  surfaceFaint: 'rgba(255, 255, 255, 0.03)',
+  successBgTop: '#14110b',
+  successBgMid: '#0a0a0a',
+  successBgBottom: '#050505',
+  shadow: '#000000',
+
   overlay: 'rgba(0, 0, 0, 0.6)',
   borderLight: '#49505730',
   borderMedium: '#49505750',

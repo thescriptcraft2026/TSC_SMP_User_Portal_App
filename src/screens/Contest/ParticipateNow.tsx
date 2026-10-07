@@ -142,8 +142,16 @@ const ParticipateNow = () => {
         type: 'success',
         title: res.message || res.data.message || res?.payload?.message,
       });
+      const participantId =
+        res?.data?.id ??
+        res?.data?.participant?.id ??
+        res?.data?.participant_id ??
+        res?.id ??
+        res?.participant_id;
+
       navigation.navigate('SuccessScreen', {
         contestId: contest_id?.id,
+        participantId,
       });
     } catch (error) {
       console.log('Submit error', error);

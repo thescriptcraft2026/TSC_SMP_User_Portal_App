@@ -9,7 +9,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   useFocusEffect,
   useNavigation,
@@ -49,6 +49,8 @@ import Note from '../../assets/SVG/Note';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import RenderHTML from 'react-native-render-html';
 import { useShare } from '../../hooks/useShare';
+import { getUserSubmissionsByContestId } from '../../services/contestApi';
+import SubmissionCard from './components/SubmissionCard';
 import ContestDetailsSkeleton from './components/ContestDetailsSkeleton';
 import PrizeMoneyCard from './components/PrizeMoneyCard';
 import ContestWinnerPodium from '../../components/ContestWinnerPodium/ContestWinnerPodium';
@@ -62,13 +64,14 @@ const ContestDetails = () => {
   const navigation = useNavigation<any>();
   const isDark = true;
   const route = useRoute<any>();
-  const { contestId } = route.params || {};
+  const { contestId, showMySubmissions } = route.params || {};
   const insets = useSafeAreaInsets();
   const dispatch = useDispatch<any>();
   const { show } = useToast();
   const [showFullDescription, setShowFullDescription] = useState(false);
   const { width } = useWindowDimensions();
   const [imageError, setImageError] = useState(false);
+  const [mySubmissions, setMySubmissions] = useState<any[]>([]);
 
   const { selectedContest, bookmarkedIds, loading } = useSelector(
     (state: any) => state.contest,
@@ -146,6 +149,27 @@ const ContestDetails = () => {
       dispatch(getContestStatusThunk(contestId));
     }, [contestId]),
   );
+
+  useEffect(() => {
+    if (!showMySubmissions || !contestId) return;
+
+    (async () => {
+      try {
+        const res = await getUserSubmissionsByContestId(contestId);
+        const list = res?.data?.submissions || [];
+        setMySubmissions(Array.isArray(list) ? list : []);
+        console.log(
+          '[ContestDetails] My submissions:',
+          JSON.stringify(res, null, 2),
+        );
+      } catch (err: any) {
+        console.log(
+          '[ContestDetails] My submissions error:',
+          err?.response?.data || err?.message,
+        );
+      }
+    })();
+  }, [showMySubmissions, contestId]);
 
   const participantsData = selectedContest?.top_five_submissions || [];
   const extraCount = participantsData.length - 3;
@@ -623,11 +647,33 @@ const ContestDetails = () => {
           </View>
 
           {/* Prize Money */}
-          {selectedContest?.prize_money && (
+          {!showMySubmissions && selectedContest?.prize_money && (
             <PrizeMoneyCard amount={selectedContest?.prize_money} />
           )}
 
-          {selectedContest?.publish_winners === true
+          {showMySubmissions ? (
+            <View style={{ marginTop: 24 }}>
+              <View style={styles.mySubHeader}>
+                <Note size={20} color={themeColors.primary} />
+                <Text style={styles.mySubTitle}>My Submissions</Text>
+                <View style={styles.mySubCount}>
+                  <Text style={styles.mySubCountText}>
+                    {mySubmissions.length}
+                  </Text>
+                </View>
+              </View>
+
+              {mySubmissions.map((item: any) => (
+                <SubmissionCard
+                  key={item.id}
+                  item={item}
+                  onPress={() =>
+                    navigation.navigate('ParticipateDetails', { id: item.id })
+                  }
+                />
+              ))}
+            </View>
+          ) : selectedContest?.publish_winners === true
             ? selectedContest?.winners?.length > 0 && (
                 <View
                   style={[
@@ -921,6 +967,33 @@ const styles = StyleSheet.create({
   winnerWrapper: {
     width: 320,
     marginRight: 14,
+  },
+
+  // My submissions
+  mySubHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 12,
+    paddingHorizontal: 6,
+  },
+  mySubTitle: {
+    fontFamily: Fonts.Bold,
+    fontSize: 20,
+    color: themeColors.white,
+  },
+  mySubCount: {
+    backgroundColor: 'rgba(255,184,0,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,184,0,0.35)',
+    borderRadius: 100,
+    paddingHorizontal: 10,
+    paddingVertical: 1,
+  },
+  mySubCountText: {
+    color: '#FFB800',
+    fontSize: 12,
+    fontFamily: Fonts.Bold,
   },
 
   // Timeline

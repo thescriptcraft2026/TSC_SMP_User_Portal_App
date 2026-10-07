@@ -8,7 +8,11 @@ import {
   Dimensions,
 } from 'react-native';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import {
+  useFocusEffect,
+  useNavigation,
+  useRoute,
+} from '@react-navigation/native';
 import { themeColors } from '../../theme/colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
@@ -38,6 +42,12 @@ const { width } = Dimensions.get('window');
 
 const AllContest = () => {
   const isDark = true;
+  const route = useRoute<any>();
+
+  const showMySubmissions =
+    route?.params?.showMySubmissions === true ||
+    route?.params?.showMySubmissions === 'true';
+
   const { show } = useToast();
   const navigation = useNavigation<any>();
   const dispatch = useDispatch<any>();
@@ -57,13 +67,51 @@ const AllContest = () => {
 
   /* ---------------- REDUX ---------------- */
 
-  const { contest, myParticipatedContests, loading, page, hasMore, bannerData } =
-    useSelector((state: any) => state.contest);
+  const {
+    contest,
+    myParticipatedContests,
+    loading,
+    page,
+    hasMore,
+    bannerData,
+  } = useSelector((state: any) => state.contest);
 
   /* ---------------- INITIAL FETCH ---------------- */
 
+  // useFocusEffect(
+  //   useCallback(() => {
+  //     if (showMyOpps) return;
+
+  //     dispatch(resetContest());
+
+  //     dispatch(
+  //       getAllContest({
+  //         page: 1,
+  //         sort_by: sortBy,
+  //         search,
+  //         genre_id: genreId,
+  //       }),
+  //     );
+  //     // Fetch contest banners
+  //     dispatch(getContestBanner());
+  //   }, [dispatch, sortBy, search, genreId, showMyOpps]),
+  // );
+
   useFocusEffect(
     useCallback(() => {
+      if (showMySubmissions) {
+        setShowMyOpps(true);
+        setContestTab('');
+
+        dispatch(
+          getMyParticipatedContestsThunk({
+            page: 1,
+          }),
+        );
+
+        return;
+      }
+
       if (showMyOpps) return;
 
       dispatch(resetContest());
@@ -76,9 +124,9 @@ const AllContest = () => {
           genre_id: genreId,
         }),
       );
-      // Fetch contest banners
+
       dispatch(getContestBanner());
-    }, [dispatch, sortBy, search, genreId, showMyOpps]),
+    }, [dispatch, sortBy, search, genreId, showMyOpps, showMySubmissions]),
   );
 
   /* ---------------- LOAD MORE ---------------- */
@@ -256,29 +304,18 @@ const AllContest = () => {
     }
   };
 
-
   const bannerDataSorted = useMemo(() => {
-    const banners = Array.isArray(bannerData)
-      ? bannerData
-      : [];
+    const banners = Array.isArray(bannerData) ? bannerData : [];
 
     return banners
-      ?.filter(
-        (item: any) =>
-          item?.status === 'active' &&
-          !!item?.image,
-      )
+      ?.filter((item: any) => item?.status === 'active' && !!item?.image)
       ?.sort(
-        (a: any, b: any) =>
-          Number(a?.position ?? 0) -
-          Number(b?.position ?? 0),
+        (a: any, b: any) => Number(a?.position ?? 0) - Number(b?.position ?? 0),
       );
   }, [bannerData]);
 
   const hasUpcomingBanners =
-    contestTab === 'Upcoming' &&
-    !showMyOpps &&
-    bannerDataSorted?.length > 0;
+    contestTab === 'Upcoming' && !showMyOpps && bannerDataSorted?.length > 0;
 
   /* ---------------- FOOTER ---------------- */
 
@@ -309,13 +346,11 @@ const AllContest = () => {
     return null;
   };
 
-
   const hideHeader =
     showSearch &&
     search.trim().length > 0 &&
     contestData.length === 0 &&
     !loading;
-
 
   return (
     <View
@@ -329,10 +364,7 @@ const AllContest = () => {
       ]}
     >
       <SafeAreaView style={styles.flex} edges={['left', 'right', 'top']}>
-        <StatusBar
-          translucent
-          barStyle="light-content"
-        />
+        <StatusBar translucent barStyle="light-content" />
 
         <AuthHeader
           showBack
@@ -387,6 +419,7 @@ const AllContest = () => {
                   onPress={() => {
                     navigation.navigate('ContestDetails', {
                       contestId: item?.id,
+                      showMySubmissions: true,
                     });
                   }}
                   onBookMark={() => handleBookmark(item)}
@@ -600,7 +633,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: Fonts.Medium,
     textAlign: 'center',
-    marginTop: 10
+    marginTop: 10,
   },
 
   emptySubtitle: {

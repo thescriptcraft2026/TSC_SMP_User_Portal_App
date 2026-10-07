@@ -1,292 +1,245 @@
-import React, { useRef, useMemo, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Animated,
-  useColorScheme,
-} from 'react-native';
-
+import React, { useState } from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import FastImage from 'react-native-fast-image';
-import Ionicons from '@react-native-vector-icons/ionicons';
-import LinearGradient from 'react-native-linear-gradient';
-import ArrowUpRight from '../../../assets/SVG/ArrowUpRight';
 import { themeColors } from '../../../theme/colors';
 import { Fonts } from '../../../constants/Fonts';
-import GenreBadge from '../../../components/Badges/GenreBadge';
-import BookMark from '../../../assets/SVG/BookMark';
-import User from '../../../assets/SVG/User';
-import { formatCount } from '../../../utils/date';
+import Eye from '../../../assets/SVG/Eye';
+import Star from '../../../assets/SVG/Star';
+import Like from '../../../assets/SVG/Like';
+import LinearGradient from 'react-native-linear-gradient';
+import Ionicons from '@react-native-vector-icons/ionicons';
+import Avatar from '../../../components/Avatar/Avatar';
+import { formatCount, formatDate } from '../../../utils/date';
 
 type Props = {
-  url: string;
-  title: string;
-  subtitle: string;
-  view?: any;
-  type: string;
-  bookmarked?: boolean;
-  onSaved?: () => void;
+  item: any;
   onPress?: () => void;
-  user?: any;
 };
 
-const SubmissionCard = ({
-  url,
-  title,
-  subtitle,
-  type,
-  bookmarked,
-  onSaved,
-  onPress,
-  view,
-  user,
-}: Props) => {
-  const scale = useRef(new Animated.Value(1)).current;
-  const likeScale = useRef(new Animated.Value(1)).current;
-  const isDark = true;
+const STATUS_COLORS: Record<string, string> = {
+  submitted: '#66A3FF',
+  approved: '#16a34a',
+  published: '#16a34a',
+  rejected: '#ff4d4f',
+  pending: '#EB9D08',
+};
+
+const SubmissionCard = ({ item, onPress }: Props) => {
   const [imageError, setImageError] = useState(false);
 
-  /* ---------------- THEME ---------------- */
-  const colors = useMemo(() => {
-    return {
-      textPrimary: '#FFFFFF',
-      textSecondary: '#BBBBBB',
+  const status = String(item?.contest_status || '').toLowerCase();
+  const statusColor: string =
+    STATUS_COLORS[status] || String(themeColors.primary);
 
-      glassBg: isDark ? 'rgba(20,20,20,0.65)' : 'rgba(255,255,255,0.80)',
-
-      ratingBg: isDark ? 'rgba(255,255,255,0.1)' : '#FFFFFF',
-
-      ratingText: isDark ? '#FFF' : '#111',
-
-      bookmarkBg: isDark ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.7)',
-    };
-  }, [isDark]);
-
-  /* ---------------- ANIMATION ---------------- */
-  const handlePressIn = () => {
-    Animated.spring(scale, { toValue: 0.96, useNativeDriver: true }).start();
-  };
-
-  const handlePressOut = () => {
-    Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start();
-  };
-
-  const handleSaved = () => {
-    Animated.sequence([
-      Animated.timing(likeScale, {
-        toValue: 1.3,
-        duration: 120,
-        useNativeDriver: true,
-      }),
-      Animated.spring(likeScale, { toValue: 1, useNativeDriver: true }),
-    ]).start();
-
-    onSaved?.(); // 🔥 let parent handle state
-  };
+  const stats = [
+    { icon: <Eye size={13} color="#fff" />, value: formatCount(item?.views || 0) },
+    {
+      icon: <Like size={13} color="#fff" />,
+      value: formatCount(item?.likes_count || 0),
+    },
+    {
+      icon: <Ionicons name="chatbubble-outline" size={13} color="#fff" />,
+      value: formatCount(item?.comments_count || 0),
+    },
+  ];
 
   return (
-    <Animated.View
-      style={[
-        styles.container,
-        {
-          transform: [{ scale }],
-          backgroundColor: isDark ? '#0f0f10' : themeColors.white,
-        },
-      ]}
+    <TouchableOpacity
+      activeOpacity={0.92}
+      onPress={onPress}
+      style={styles.card}
     >
-      <TouchableOpacity
-        activeOpacity={0.9}
-        onPress={onPress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-      >
-        <View style={styles.card}>
-          {/* IMAGE */}
-          <FastImage
-            source={
-              imageError || !url
-                ? require('../../../assets/images/fallback.png')
-                : { uri: url }
-            }
-            style={styles.image}
-            resizeMode={FastImage.resizeMode.cover}
-            onError={() => setImageError(true)}
-            defaultSource={require('../../../assets/images/fallback.png')}
-          />
+      {/* COVER */}
+      <View style={styles.imageWrapper}>
+        <FastImage
+          source={
+            imageError || !item?.image
+              ? require('../../../assets/images/fallback.png')
+              : { uri: item.image }
+          }
+          onError={() => setImageError(true)}
+          style={styles.image}
+        />
+        <LinearGradient
+          colors={['rgba(0,0,0,0.35)', 'transparent', 'rgba(9,9,13,0.95)']}
+          locations={[0, 0.4, 1]}
+          style={StyleSheet.absoluteFill}
+        />
 
-          {/* GRADIENT (IMPORTANT FOR DARK MODE READABILITY) */}
-          <LinearGradient
-            colors={
-              isDark
-                ? ['transparent', 'rgba(0,0,0,0.7)']
-                : ['transparent', 'rgba(0,0,0,0.4)']
-            }
-            style={styles.gradient}
-          />
-
-          {/* CONTENT */}
-          <View style={[styles.content, { backgroundColor: colors.glassBg }]}>
-            {/* LEFT TEXT */}
-            <View style={{ flex: 1, marginRight: 10 }}>
-              <View
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
-              >
-                <View
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
-                >
-                  <User
-                    size={14}
-                    color={isDark ? themeColors.gray : themeColors.gray}
-                  />
-                  <Text style={[{ color: colors.textPrimary }]}>{user}</Text>
-                </View>
-                {/* RATING */}
-                <View
-                  style={[
-                    styles.ratingBox,
-                    { backgroundColor: colors.ratingBg },
-                  ]}
-                >
-                  <Ionicons name="eye" size={12} color="#FFD700" />
-                  <Text
-                    style={[styles.ratingText, { color: colors.ratingText }]}
-                  >
-                    {formatCount(view)}
-                  </Text>
-                </View>
-              </View>
-              <Text
-                style={[styles.title, { color: colors.textPrimary }]}
-                numberOfLines={1}
-                ellipsizeMode="tail"
-              >
-                {title}
-              </Text>
-
-              <Text
-                style={[styles.subtitle, { color: colors.textSecondary }]}
-                numberOfLines={1}
-              >
-                {subtitle}
-              </Text>
+        <View style={styles.topRow}>
+          {!!status && (
+            <View style={[styles.glassPill, { borderColor: `${statusColor}99` }]}>
+              <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
+              <Text style={styles.pillText}>{status.toUpperCase()}</Text>
             </View>
-
-            <View
-              style={[
-                styles.arrowContainer,
-                { borderColor: isDark ? themeColors.white : themeColors.black },
-              ]}
-            >
-              <ArrowUpRight
-                size={22}
-                color={isDark ? themeColors.white : themeColors.black}
-              />
-            </View>
+          )}
+          <View style={styles.glassPill}>
+            <Star size={12} color={themeColors.primary} />
+            <Text style={styles.pillText}>
+              {Number(item?.avg_rating || 0).toFixed(1)}
+            </Text>
           </View>
         </View>
-      </TouchableOpacity>
-    </Animated.View>
+
+        <View style={styles.titleWrap}>
+          <Text style={styles.title} numberOfLines={2}>
+            {item?.title}
+          </Text>
+        </View>
+      </View>
+
+      {/* BODY */}
+      <View style={styles.body}>
+        <View style={styles.authorRow}>
+          <Avatar
+            uri={item?.user?.profile_photo_path}
+            name={item?.user?.name}
+            size={26}
+          />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.author} numberOfLines={1}>
+              {item?.user?.name}
+            </Text>
+            <Text style={styles.date}>{formatDate(item?.createdAt)}</Text>
+          </View>
+          <View style={styles.arrowBtn}>
+            <Ionicons
+              name="arrow-forward"
+              size={16}
+              color={String(themeColors.primaryForeground)}
+            />
+          </View>
+        </View>
+
+        {!!item?.story && (
+          <Text style={styles.story} numberOfLines={2}>
+            {item.story}
+          </Text>
+        )}
+
+        <View style={styles.statsRow}>
+          {stats.map((st, i) => (
+            <View key={i} style={styles.statPill}>
+              {st.icon}
+              <Text style={styles.statText}>{st.value}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+    </TouchableOpacity>
   );
 };
 
 export default SubmissionCard;
 
-/* ---------------- STYLES ---------------- */
-
 const styles = StyleSheet.create({
-  container: {
-    marginHorizontal: 10,
-    padding: 3,
-    borderRadius: 20,
-    // iOS shadow
-    shadowColor: '#000',
-    shadowOpacity: 0.09,
-    shadowRadius: 8,
-
-    // Android
-    elevation: 1,
-  },
-
   card: {
-    height: 200,
+    backgroundColor: '#14161b',
     borderRadius: 20,
     overflow: 'hidden',
-    // iOS shadow
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
     shadowColor: '#000',
-    shadowOpacity: 0.09,
-    shadowRadius: 8,
-
-    // Android
-    elevation: 1,
+    shadowOpacity: 0.4,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 6,
   },
-
+  imageWrapper: {
+    height: 140,
+    justifyContent: 'flex-end',
+  },
   image: {
     ...StyleSheet.absoluteFillObject,
   },
-
-  gradient: {
+  topRow: {
     position: 'absolute',
-    bottom: 0,
-    width: '100%',
-    height: '65%',
+    top: 8,
+    left: 8,
+    right: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
-
-  bookmark: {
-    position: 'absolute',
-    top: 0,
-    right: 15,
-    padding: 3,
-    borderBottomLeftRadius: 8,
-    borderBottomRightRadius: 8,
-  },
-
-  content: {
-    position: 'absolute',
-    bottom: 6,
-    left: 6,
-    right: 6,
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 15,
+  glassPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    overflow: 'hidden',
+    gap: 6,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
+    borderRadius: 100,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
   },
-
-  title: {
-    fontSize: 24,
+  statusDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+  },
+  pillText: {
+    color: '#fff',
+    fontSize: 10,
     fontFamily: Fonts.Bold,
-    lineHeight: 26,
-    letterSpacing: 0.3,
-    marginTop: 4,
   },
-
-  subtitle: {
-    fontSize: 12,
+  titleWrap: {
+    paddingHorizontal: 12,
+    paddingBottom: 10,
+  },
+  title: {
+    color: themeColors.white,
+    fontSize: 18,
+    fontFamily: Fonts.Black,
+  },
+  body: {
+    padding: 12,
+    gap: 8,
+  },
+  authorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  author: {
+    color: themeColors.white,
+    fontSize: 14,
     fontFamily: Fonts.SemiBold,
   },
-
-  ratingBox: {
+  date: {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 11,
+    fontFamily: Fonts.Regular,
+  },
+  arrowBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: themeColors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  story: {
+    color: 'rgba(255,255,255,0.72)',
+    fontSize: 12,
+    lineHeight: 18,
+    fontFamily: Fonts.Regular,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  statPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 1,
-    borderRadius: 10,
-    maxWidth: 60,
-    marginBottom: 4,
-  },
-
-  ratingText: {
-    marginLeft: 4,
-    fontSize: 11,
-    fontFamily: Fonts.Bold,
-  },
-
-  arrowContainer: {
-    borderWidth: 1,
+    gap: 6,
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: 100,
-    padding: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  statText: {
+    color: themeColors.white,
+    fontSize: 12,
+    fontFamily: Fonts.SemiBold,
   },
 });

@@ -32,6 +32,8 @@ import { themeColors } from '../../theme/colors';
 import { Fonts } from '../../constants/Fonts';
 import ImageUploader from '../../components/ImageUploader/ImageUploader';
 import FloatingInputTwo from '../../components/Input/FloatingInputTwo';
+import CharacterCount from '../../components/Input/CharacterCount';
+import { Limits } from '../../constants/Limits';
 import PrimaryButton from '../../components/Buttons/PrimaryButton';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import FloatingDropdown from '../../components/DropDown/FloatingDropdown';
@@ -106,6 +108,7 @@ const AddSynopsis = () => {
     handleSubmit,
     setValue,
     reset,
+    watch,
     formState: { errors },
   } = useForm<FormData>({
     defaultValues: {
@@ -270,12 +273,16 @@ const AddSynopsis = () => {
             rules={{ required: 'Title is required' }}
             name="title"
             render={({ field: { onChange, value } }) => (
-              <FloatingInputTwo
-                label="Title"
-                value={value}
-                onChangeText={(text) => onChange(sanitizeTitle(text))}
-                error={errors.title?.message}
-              />
+              <>
+                <FloatingInputTwo
+                  label="Title"
+                  value={value}
+                  onChangeText={(text) => onChange(sanitizeTitle(text))}
+                  error={errors.title?.message}
+                  maxLength={Limits.TitleMax}
+                />
+                <CharacterCount value={value} limit={Limits.TitleMax} />
+              </>
             )}
           />
         </View>
@@ -403,22 +410,13 @@ const AddSynopsis = () => {
                   pasteAsPlainText={true}
                   initialContentHTML={book?.story || ''} // 🔥 ADD THIS
                 />
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    justifyContent: 'flex-end',
-                    marginTop: 8,
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 10,
-                      color: '#eae17f',
-                    }}
-                  >
-                    Minimum 250 characters required
-                  </Text>
-                </View>
+                <CharacterCount
+                      value={watch('content')}
+                      limit={Limits.ContentMin}
+                      stripHtml
+                      hint={`Minimum ${Limits.ContentMin} characters required`}
+                      style={{ marginTop: 8, marginBottom: 0 }}
+                    />
               </>
             )}
           />

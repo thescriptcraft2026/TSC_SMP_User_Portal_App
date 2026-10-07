@@ -65,7 +65,7 @@ export const useShare = (initialData?: ShareProps) => {
           deepLink = `${BASE_URL}/${value}`;
           break;
         case 'visionx':
-          deepLink = `${BASE_URL}/vision/${value}`;
+          deepLink = `${BASE_URL}/creators-zone/${value}`;
           break;
         case 'synopsis':
           deepLink = `${BASE_URL}/synopsys/${value}`;

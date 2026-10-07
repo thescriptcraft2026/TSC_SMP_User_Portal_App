@@ -83,6 +83,12 @@ export const getParticipantDetailsById = async (id: string) => {
   return res?.data?.data;
 };
 
+// Logged-in user's submissions for a contest
+export const getUserSubmissionsByContestId = async (contest_id: string) => {
+  const res = await api.get(`/contest/user-submissions/${contest_id}`);
+  return res?.data;
+};
+
 export const getMyParticipatedContests = async (page = 1, limit = 10) => {
   const res = await api.get(`/contest/participant`, {
     params: { page, limit },

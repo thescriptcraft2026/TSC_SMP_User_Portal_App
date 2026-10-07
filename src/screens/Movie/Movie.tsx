@@ -148,7 +148,15 @@ const Movie = () => {
     setRefreshing(true);
 
     try {
-      await dispatch(getAllMovies({ page: 1, sort_by: sortBy }));
+      await dispatch(
+        getAllMovies({
+          page: 1,
+          sort_by: sortBy,
+          search,
+          genre_id: genreId,
+          reviewcategory_id: reviewCategoryId,
+        }),
+      );
     } finally {
       setRefreshing(false);
     }
