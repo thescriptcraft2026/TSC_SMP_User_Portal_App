@@ -28,6 +28,11 @@ import {
 } from './src/services/notificationService';
 import { setPendingDeepLink } from './src/utils/deepLinkStore';
 import { handleDeepLink } from './src/utils/handleDeepLink';
+import {
+  checkInstallReferrerOnce,
+  openPendingContest,
+  saveReferralFromUrl,
+} from './src/referral/referralService';
 
 import UpdateModal from './src/components/Modals/UpdateModal';
 import { checkAppUpdate, redirectToStore } from './src/services/updateService';
@@ -107,15 +112,26 @@ const AppWrapper = () => {
 
 
 
-    const subscription = Linking.addEventListener('url', ({ url }) => {
-      handleDeepLink(url);
+    // Contest links are saved as a referral (influencer + contestId) and opened
+    // by openPendingContest once the user is inside the App stack.
+    const subscription = Linking.addEventListener('url', async ({ url }) => {
+      if (await saveReferralFromUrl(url)) {
+        openPendingContest();
+      } else {
+        handleDeepLink(url);
+      }
     });
 
-    Linking.getInitialURL().then(url => {
-      if (url) {
+    Linking.getInitialURL().then(async url => {
+      if (!url) return;
+      if (await saveReferralFromUrl(url)) {
+        openPendingContest();
+      } else {
         setPendingDeepLink(url);
       }
     });
+
+    checkInstallReferrerOnce();
 
     return () => {
       subscription.remove();

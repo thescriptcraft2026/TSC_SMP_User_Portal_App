@@ -29,6 +29,7 @@ import { CommonActions } from '@react-navigation/native';
 
 import { Dimensions } from 'react-native';
 import { scaleSize, verticalScaleSize } from '../../utils/responsive';
+import { clearInfluencer } from '../../referral/referralService';
 
 const { height } = Dimensions.get('window');
 
@@ -106,6 +107,9 @@ const Login = ({ navigation }: any) => {
       }
 
       const user = userRes?.data;
+
+      // existing user logging in: discard any influencer referral
+      clearInfluencer();
 
       // ==================================================
       // ✅ PROFILE VALIDATIONS

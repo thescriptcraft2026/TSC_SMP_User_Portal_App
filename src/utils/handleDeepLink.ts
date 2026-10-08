@@ -1,9 +1,20 @@
-import { navigate } from '../../navigationRef';
+import { navigate, navigationRef } from '../../navigationRef';
+import { setPendingDeepLink } from './deepLinkStore';
 
 export const handleDeepLink = (url: string) => {
   if (!url) return;
 
   console.log('Deep Link URL:', url);
+
+  // App stack not mounted yet (splash / auth bootstrap) — keep the link and
+  // let SplashScreen open it once the user lands in the App stack.
+  const rootRoutes = navigationRef.isReady()
+    ? navigationRef.getRootState()?.routes
+    : undefined;
+  if (!rootRoutes?.some(r => r.name === 'App')) {
+    setPendingDeepLink(url);
+    return;
+  }
 
   let route = '';
 
@@ -33,7 +44,11 @@ export const handleDeepLink = (url: string) => {
 
   console.log('Parsed Route:', route);
 
-  const parts = route.split('/').filter(Boolean);
+  // Strip query string / hash so "?utm=.." or "#.." don't break matching
+  const parts = route
+    .split(/[?#]/)[0]
+    .split('/')
+    .filter(Boolean);
 
   console.log('Parts:', parts);
 
@@ -65,102 +80,72 @@ export const handleDeepLink = (url: string) => {
   }
 
   const type = parts[0].toLowerCase();
+
+  // https://www.thescriptcraft.com/contests/{contestId}/participants/{id}
+  if (
+    (type === 'contest' || type === 'contests') &&
+    parts.length >= 4 &&
+    parts[2].toLowerCase() === 'participants'
+  ) {
+    navigate('ParticipateDetails', { id: decodeURIComponent(parts[3]) });
+    return;
+  }
+
+  const KNOWN_TYPES = [
+    'book', 'books', 'movie', 'movies', 'post', 'posts', 'contest',
+    'contests', 'synopsis', 'synopses', 'synopsys', 'vision', 'visionx',
+    'creators-zone', 'opportunity', 'opportunities', 'profile',
+  ];
+
+  // https://www.thescriptcraft.com/{username}  (shared profile link)
+  if (parts.length === 1 && !KNOWN_TYPES.includes(type)) {
+    navigate('Profile', { username: decodeURIComponent(parts[0]) });
+    return;
+  }
+
   const value = decodeURIComponent(parts.slice(1).join('/'));
 
-  console.log('Type:', type);
-  console.log('Value:', value);
-
   switch (type) {
-    // ==========================
-    // BOOK
-    // ==========================
     case 'book':
     case 'books':
-      navigate('BookDetails', {
-        bookId: value,
-      });
+      navigate('BookDetails', { bookId: value });
       break;
 
-    // ==========================
-    // MOVIE
-    // ==========================
     case 'movie':
     case 'movies':
-      navigate('SingleMovieDetails', {
-        id: value,
-      });
+      navigate('SingleMovieDetails', { id: value });
       break;
 
-    // ==========================
-    // POST
-    // ==========================
     case 'post':
     case 'posts':
-      console.log('Opening Post:', value);
-
-      navigate('SinglePostDetailes', {
-        postId: value,
-      });
+      navigate('SinglePostDetailes', { postId: value });
       break;
 
-    // ==========================
-    // CONTEST
-    // ==========================
     case 'contest':
     case 'contests':
-      navigate('ContestDetails', {
-        id: value,
-      });
+      navigate('ContestDetails', { contestId: value });
       break;
 
-    // ==========================
-    // SYNOPSIS
-    // ==========================
     case 'synopsis':
     case 'synopses':
-      navigate('SynopsisDetails', {
-        synopsisId: value,
-      });
+    case 'synopsys':
+      navigate('SynopsisDetails', { synopsisId: value });
       break;
 
-    // ==========================
-    // VISION X
-    // ==========================
     case 'vision':
     case 'visionx':
-      navigate('VisionXDetails', {
-        visionxId: value,
-      });
+    case 'creators-zone':
+      navigate('VisionXDetails', { visionxId: value });
       break;
 
-    // ==========================
-    // OPPORTUNITY
-    // ==========================
     case 'opportunity':
     case 'opportunities':
-      navigate('SingleOpportunityDetails', {
-        id: value,
-      });
+      navigate('SingleOpportunityDetails', { opp_id: value });
       break;
 
-    // ==========================
-    // PROFILE
-    // ==========================
-    case 'profile': {
-      const isUUID =
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-          value,
-        );
-
-      navigate(
-        'Profile',
-        isUUID
-          ? { id: value }
-          : { username: value },
-      );
-
+    case 'profile':
+      navigate('Profile', { username: value });
       break;
-    }
 
     default:
       console.log('Unknown deep link:', route);

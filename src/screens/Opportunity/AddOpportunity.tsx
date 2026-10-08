@@ -123,6 +123,7 @@ const AddOpportunity = () => {
     control,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors },
   } = useForm<FormData>({
     defaultValues: {
@@ -133,6 +134,10 @@ const AddOpportunity = () => {
       openTill: null,
     },
   });
+
+  const descriptionLength = (watch('description') ?? '')
+    .replace(/<[^>]*>/g, '')
+    .trim().length;
 
   useEffect(() => {
     if (!isEdit || !editData) return;
@@ -157,7 +162,7 @@ const AddOpportunity = () => {
 
     setTags(
       editData.tags?.map((t: any) => (typeof t === 'string' ? t : t.name)) ||
-      [],
+        [],
     );
 
     if (editData.poster_url) {
@@ -290,8 +295,8 @@ const AddOpportunity = () => {
       const finalTags = tagsTouched
         ? tags
         : editData?.tags?.map((t: any) =>
-          typeof t === 'string' ? t : t.name,
-        ) || [];
+            typeof t === 'string' ? t : t.name,
+          ) || [];
 
       // ✅ CORRECT WAY
       finalTags.forEach((tag: any) => {
@@ -362,10 +367,7 @@ const AddOpportunity = () => {
       edges={['top', 'left', 'right']}
     >
       {(createLoading || loading) && <AppLoader visible />}
-      <StatusBar
-        translucent
-        barStyle={'light-content'}
-      />
+      <StatusBar translucent barStyle={'light-content'} />
 
       <AuthHeader
         showBack
@@ -406,7 +408,7 @@ const AddOpportunity = () => {
               <FloatingInputTwo
                 label="Title"
                 value={value}
-                onChangeText={(text) => onChange(sanitizeTitle(text))}
+                onChangeText={text => onChange(sanitizeTitle(text))}
                 backgroundColor={'transparent'}
                 labelBG={isDark ? cardBg : themeColors.white}
                 error={errors.title?.message}
@@ -515,17 +517,28 @@ const AddOpportunity = () => {
                     pasteAsPlainText
                   />
 
-                  {errors.description && (
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      marginTop: 6,
+                    }}
+                  >
+                    <Text style={{ color: '#ff4d4f', fontSize: 12, flex: 1 }}>
+                      {errors.description?.message}
+                    </Text>
                     <Text
                       style={{
-                        color: '#ff4d4f',
                         fontSize: 12,
-                        marginTop: 6,
+                        color:
+                          descriptionLength >= 20
+                            ? '#52c41a'
+                            : placeholderColor,
                       }}
                     >
-                      {errors.description.message}
+                      Minimum characters: {descriptionLength} / 20
                     </Text>
-                  )}
+                  </View>
                 </>
               )}
             />
@@ -619,8 +632,8 @@ const AddOpportunity = () => {
                       borderColor: isSelected
                         ? themeColors.primary
                         : isDark
-                          ? '#333'
-                          : '#ddd',
+                        ? '#333'
+                        : '#ddd',
                     },
                   ]}
                 >
@@ -743,9 +756,7 @@ const AddOpportunity = () => {
                   gap: 4,
                 }}
               >
-                <Plus
-                  color={isDark ? themeColors.white : themeColors.black}
-                />
+                <Plus color={isDark ? themeColors.white : themeColors.black} />
                 <Text
                   style={{
                     color: themeColors.primary,
@@ -779,9 +790,7 @@ const AddOpportunity = () => {
                       style={styles.mandatoryBtn}
                     >
                       <Feather
-                        name={
-                          questionMandatory[i] ? 'check-circle' : 'circle'
-                        }
+                        name={questionMandatory[i] ? 'check-circle' : 'circle'}
                         size={18}
                         color={
                           questionMandatory[i] ? themeColors.primary : '#999'

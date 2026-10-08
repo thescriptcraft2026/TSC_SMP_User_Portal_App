@@ -8,6 +8,7 @@
 	<array>
 		<string>applinks:www.thescriptcraft.com</string>
 		<string>applinks:thescriptcraft.com</string>
+		<string>applinks:www.beta.thescriptcraft.com</string>
 	</array>
 </dict>
 </plist>

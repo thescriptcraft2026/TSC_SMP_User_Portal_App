@@ -1,0 +1,10 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["REPLACE_TEAM_ID.com.scriptcraft.scriptcraft"],
+        "components": [{ "/": "/contests/*", "comment": "Contest share links" }]
+      }
+    ]
+  }
+}

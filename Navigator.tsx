@@ -2,6 +2,7 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { navigationRef } from './navigationRef';
+import { openPendingContest } from './src/referral/referralService';
 import BottomTabs from './src/navigation/BottomTab';
 import SplashScreen from './src/screens/SplashScreen';
 import Login from './src/screens/Auth/Login';
@@ -63,39 +64,6 @@ import RepostDetails from './src/components/Post/RepostDetails';
 import NotFoundScreen from './src/screens/NotFoundScreen';
 
 const Stack = createNativeStackNavigator();
-
-const linking = {
-  prefixes: [
-    'https://www.thescriptcraft.com',
-    'https://thescriptcraft.com',
-  ],
-
-  config: {
-    screens: {
-      Splash: 'splash',
-
-      onBoarding: 'onboarding',
-
-      App: {
-        screens: {
-          BottomTab: {
-            screens: {
-              Home: 'home',
-            },
-          },
-          SingleMovieDetails: 'movie/:id',
-          SinglePostDetailes: 'post/:id',
-          ContestDetails: 'contest/:id',
-          Profile: 'profile/:id',
-          BookDetails: 'book/:id',
-          SynopsisDetails: 'synopsis/:id',
-          VisionXDetails: 'visionx/:id',
-          SingleOpportunityDetails: 'opportunity/:id',
-        },
-      },
-    },
-  },
-};
 
 // ✅ AUTH STACK
 const AuthStack = () => {
@@ -210,7 +178,11 @@ const AppWithDrawer = () => {
 
 const Navigator = () => {
   return (
-    <NavigationContainer ref={navigationRef} linking={linking}>
+    <NavigationContainer
+      ref={navigationRef}
+      onReady={openPendingContest}
+      onStateChange={openPendingContest}
+    >
       <Stack.Navigator
         initialRouteName="Splash"
         screenOptions={{ headerShown: false }}

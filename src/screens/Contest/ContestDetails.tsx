@@ -64,7 +64,7 @@ const ContestDetails = () => {
   const navigation = useNavigation<any>();
   const isDark = true;
   const route = useRoute<any>();
-  const { contestId, showMySubmissions } = route.params || {};
+  const { contestId, showSubmission = false } = route.params || {};
   const insets = useSafeAreaInsets();
   const dispatch = useDispatch<any>();
   const { show } = useToast();
@@ -151,7 +151,7 @@ const ContestDetails = () => {
   );
 
   useEffect(() => {
-    if (!showMySubmissions || !contestId) return;
+    if (showSubmission !== true || !contestId) return;
 
     (async () => {
       try {
@@ -169,7 +169,7 @@ const ContestDetails = () => {
         );
       }
     })();
-  }, [showMySubmissions, contestId]);
+  }, [showSubmission, contestId]);
 
   const participantsData = selectedContest?.top_five_submissions || [];
   const extraCount = participantsData.length - 3;
@@ -647,30 +647,33 @@ const ContestDetails = () => {
           </View>
 
           {/* Prize Money */}
-          {!showMySubmissions && selectedContest?.prize_money && (
+          {showSubmission !== true && selectedContest?.prize_money && (
             <PrizeMoneyCard amount={selectedContest?.prize_money} />
           )}
 
-          {showMySubmissions ? (
+          {showSubmission === true ? (
             <View style={{ marginTop: 24 }}>
               <View style={styles.mySubHeader}>
                 <Note size={20} color={themeColors.primary} />
                 <Text style={styles.mySubTitle}>My Submissions</Text>
-                <View style={styles.mySubCount}>
-                  <Text style={styles.mySubCountText}>
-                    {mySubmissions.length}
-                  </Text>
-                </View>
               </View>
 
               {mySubmissions.map((item: any) => (
-                <SubmissionCard
-                  key={item.id}
-                  item={item}
-                  onPress={() =>
-                    navigation.navigate('ParticipateDetails', { id: item.id })
-                  }
-                />
+                <View key={item?.id} style={styles.mySubCardWrapper}>
+                  <SubmissionCard
+                    url={item?.image}
+                    title={item?.title}
+                    subtitle={item?.story}
+                    view={item?.views}
+                    type={item?.type}
+                    onPress={() =>
+                      navigation.navigate('ParticipateDetails', {
+                        id: item?.id,
+                      })
+                    }
+                    user={item?.user?.name}
+                  />
+                </View>
               ))}
             </View>
           ) : selectedContest?.publish_winners === true
@@ -982,18 +985,9 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: themeColors.white,
   },
-  mySubCount: {
-    backgroundColor: 'rgba(255,184,0,0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,184,0,0.35)',
-    borderRadius: 100,
-    paddingHorizontal: 10,
-    paddingVertical: 1,
-  },
-  mySubCountText: {
-    color: '#FFB800',
-    fontSize: 12,
-    fontFamily: Fonts.Bold,
+  mySubCardWrapper: {
+    marginHorizontal: -10,
+    marginBottom: 4,
   },
 
   // Timeline

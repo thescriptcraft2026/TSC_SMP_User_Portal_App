@@ -28,6 +28,7 @@ import {
   signup,
 } from '../../redux/slices/authSlice';
 import { useToast } from '../../components/Toast/ToastProvider';
+import { clearInfluencer, getPendingReferral } from '../../referral/referralService';
 
 const SignUp = ({ navigation }: any) => {
   const isDark = useColorScheme() === 'dark';
@@ -59,7 +60,7 @@ const SignUp = ({ navigation }: any) => {
 
   const handleSignup = async (data: any) => {
     try {
-      const payload = {
+      const payload: Record<string, any> = {
         name: data.name,
         email: data.email,
         user_name: data.username,
@@ -67,7 +68,15 @@ const SignUp = ({ navigation }: any) => {
         confirm_password: data.confirmPassword,
       };
 
+      // Influencer referral: only added when one is pending
+      const referral = await getPendingReferral();
+      if (referral?.influencer) {
+        payload.influencer_name = referral.influencer;
+      }
+      if (__DEV__) console.log('[referral] register body:', payload);
+
       const res = await dispatch(signup(payload)).unwrap();
+      if (referral?.influencer) await clearInfluencer();
 
       console.log('sign up res', res?.data);
 

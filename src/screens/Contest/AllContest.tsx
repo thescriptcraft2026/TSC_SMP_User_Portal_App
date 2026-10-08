@@ -419,7 +419,7 @@ const AllContest = () => {
                   onPress={() => {
                     navigation.navigate('ContestDetails', {
                       contestId: item?.id,
-                      showMySubmissions: true,
+                      showSubmission: showMyOpps,
                     });
                   }}
                   onBookMark={() => handleBookmark(item)}
@@ -459,10 +459,11 @@ const AllContest = () => {
                     style={[
                       styles.headerRow,
                       {
-                        justifyContent: 'space-between',
+                        justifyContent: showMyOpps ? 'flex-end' : 'space-between',
                       },
                     ]}
                   >
+                    {!showMyOpps && (
                     <Tabs
                       tabs={CONTEST_TABS}
                       marginVertical={0}
@@ -506,6 +507,7 @@ const AllContest = () => {
                         );
                       }}
                     />
+                    )}
 
                     <TouchableOpacity
                       style={styles.myContestBtn}
