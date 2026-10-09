@@ -64,7 +64,7 @@ const StaticScreen = () => {
     dispatch(fetchBanners());
   }, []);
 
-  if (loading || !rows || rows.length === 0) {
+  if (loading) {
     return <AppLoader visible={true} />;
   }
 

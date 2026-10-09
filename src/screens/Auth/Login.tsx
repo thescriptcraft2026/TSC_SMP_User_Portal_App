@@ -21,14 +21,19 @@ import { useDispatch } from 'react-redux';
 import {
   getUserThunk,
   login,
+  sendLoginPhoneOtp,
+  updateProfile,
+  verifyLoginPhoneOtp,
 } from '../../redux/slices/authSlice';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useToast } from '../../components/Toast/ToastProvider';
 import api from '../../../Instance/Instance';
 import { CommonActions } from '@react-navigation/native';
+import { reset as resetRoot } from '../../../navigationRef';
 
 import { Dimensions } from 'react-native';
 import { scaleSize, verticalScaleSize } from '../../utils/responsive';
+import MobileVerificationModal from './components/MobileVerificationModal';
 
 const { height } = Dimensions.get('window');
 
@@ -41,6 +46,11 @@ const Login = ({ navigation }: any) => {
   const dispatch = useDispatch<any>();
   const { show } = useToast();
   const [loginLoading, setLoginLoading] = useState(false);
+  const [showMobileVerification, setShowMobileVerification] = useState(false);
+  const [pendingRouteName, setPendingRouteName] = useState<string | null>(null);
+  const [pendingUserId, setPendingUserId] = useState<number | null>(null);
+  const [pendingPhone, setPendingPhone] = useState('');
+  const [pendingCountryCode, setPendingCountryCode] = useState('+91');
 
   const {
     control,
@@ -57,13 +67,208 @@ const Login = ({ navigation }: any) => {
   const textColor = '#fff';
   const subText = '#aaa';
 
+  const normalizeUser = (payload: any) =>
+    payload?.data?.user || payload?.user || payload?.data || payload;
+
+  const getUserId = (user: any) => {
+    const rawId = user?.id || user?.user_id || user?.userId || user?.UserId;
+    const parsedId = Number(rawId);
+    return Number.isFinite(parsedId) && parsedId > 0 ? parsedId : null;
+  };
+
+  const isPhoneVerified = (user: any) =>
+    user?.phone_verified === true ||
+    user?.phone_verified === 1 ||
+    user?.phone_verified === '1' ||
+    String(user?.phone_verified).toLowerCase() === 'true';
+
+  const extractPhoneDetails = (user: any) => {
+    const rawPhone =
+      user?.mobile ||
+      user?.phone ||
+      user?.phone_number ||
+      user?.mobile_number ||
+      '';
+    const country =
+      user?.country_code ||
+      user?.countryCode ||
+      user?.mobile_country_code ||
+      user?.country ||
+      '+91';
+
+    return {
+      phone: String(rawPhone).replace(/[^0-9]/g, '').slice(0, 15),
+      countryCode: String(country).startsWith('+')
+        ? String(country)
+        : `+${String(country).replace(/[^0-9]/g, '').slice(0, 4) || '91'}`,
+    };
+  };
+
+  const requestMobileVerification = (routeName: string, user: any) => {
+    const { phone, countryCode } = extractPhoneDetails(user);
+    const userId = getUserId(user);
+
+    if (phone && (countryCode !== '+91' || isPhoneVerified(user))) {
+      if (routeName === 'App') {
+        resetRoot('App', {
+          screen: 'BottomTab',
+          params: { screen: 'Feed' },
+        });
+        show({
+          type: 'success',
+          title: 'Login Successful',
+        });
+        return;
+      }
+
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: routeName }],
+        }),
+      );
+
+      show({
+        type: 'success',
+        title: 'Login Successful',
+      });
+      return;
+    }
+
+    setPendingRouteName(routeName);
+    setPendingUserId(userId);
+    setPendingPhone(phone);
+    setPendingCountryCode(countryCode);
+    setShowMobileVerification(true);
+  };
+
+  const routeAfterLogin = (user: any) => {
+    const hasPrimaryRoles = user?.added_primary_roles === true;
+    const hasSecondaryRoles = user?.added_secondary_roles === true;
+    const hasUserName = user?.user_name;
+
+    if (!hasUserName) {
+      requestMobileVerification('AddUserName', user);
+      return;
+    }
+
+    if (!hasPrimaryRoles || !hasSecondaryRoles) {
+      requestMobileVerification('RoleSetup', user);
+      return;
+    }
+
+    if (!user?.bio?.trim()) {
+      requestMobileVerification('BioSetup', user);
+      return;
+    }
+
+    requestMobileVerification('App', user);
+  };
+
+  const continueAfterMobileVerification = async () => {
+    setShowMobileVerification(false);
+
+    try {
+      await dispatch(getUserThunk()).unwrap();
+    } catch (error) {
+      console.log('GET USER AFTER MOBILE VERIFICATION FAILED =>', error);
+    }
+
+    if (!pendingRouteName) return;
+
+    if (pendingRouteName === 'App') {
+      resetRoot('App', {
+        screen: 'BottomTab',
+        params: { screen: 'Feed' },
+      });
+      show({
+        type: 'success',
+        title: 'Login Successful',
+      });
+      return;
+    }
+
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: pendingRouteName }],
+      }),
+    );
+
+    show({
+      type: 'success',
+      title: 'Login Successful',
+    });
+  };
+
+  const sendExistingUserMobileOtp = async (
+    phone: string,
+    countryCode: string,
+  ) => {
+    if (!pendingUserId) {
+      throw new Error('User session missing. Please login again.');
+    }
+
+    return await dispatch(
+      sendLoginPhoneOtp({
+        user_id: pendingUserId,
+        phone,
+        country_code: countryCode,
+      }),
+    ).unwrap();
+  };
+
+  const verifyExistingUserMobileOtp = async (code: string) => {
+    if (!pendingUserId) {
+      throw new Error('User session missing. Please login again.');
+    }
+
+    const res = await dispatch(
+      verifyLoginPhoneOtp({
+        user_id: pendingUserId,
+        code,
+      }),
+    ).unwrap();
+
+    const accessToken = res?.data?.accessToken || res?.accessToken;
+    const refreshToken = res?.data?.refreshToken || res?.refreshToken;
+
+    if (accessToken && refreshToken) {
+      await AsyncStorage.setItem('userAccessToken', accessToken);
+      await AsyncStorage.setItem('userRefreshToken', refreshToken);
+      api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+    }
+
+    return res;
+  };
+
+  const saveInternationalMobile = async (
+    phone: string,
+    countryCode: string,
+  ) => {
+    await dispatch(
+      updateProfile({
+        phone,
+        country_code: countryCode,
+        country: countryCode,
+      }),
+    ).unwrap();
+  };
+
+  const showMobileVerificationError = (message: string) => {
+    show({
+      type: 'error',
+      title: message,
+    });
+  };
+
   const onSubmit = async (data: any) => {
     if (loginLoading) return;
 
     setLoginLoading(true);
     try {
       const payload = {
-        identifier: data.identifier,
+        identifier: data.identifier.trim(),
         password: data.password,
       };
 
@@ -105,63 +310,30 @@ const Login = ({ navigation }: any) => {
         userRes = await dispatch(getUserThunk()).unwrap();
       }
 
-      const user = userRes?.data;
+      const user = normalizeUser(userRes);
 
-      // ==================================================
-      // ✅ PROFILE VALIDATIONS
-      // ==================================================
-      const hasPrimaryRoles = user?.added_primary_roles === true;
-      const hasSecondaryRoles = user?.added_secondary_roles === true;
-      const hasUserName = user?.user_name;
-
-      if (!hasUserName) {
-        navigation.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [{ name: 'AddUserName' }],
-          }),
-        );
-
-        return;
-      }
-
-
-
-      // ==================================================
-      // ROLES
-      // ==================================================
-
-      if (!hasPrimaryRoles || !hasSecondaryRoles) {
-        navigation.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [{ name: 'RoleSetup' }],
-          }),
-        );
-
-        return;
-      }
-
-      // ==================================================
-      // PROFILE COMPLETE
-      // ==================================================
-
-      navigation.dispatch(
-        CommonActions.reset({
-          index: 0,
-          routes: [{ name: 'App' }],
-        }),
-      );
-
-      show({
-        type: 'success',
-        title: 'Login Successful',
-      });
+      routeAfterLogin(user);
     } catch (error: any) {
       console.log('FULL ERROR =>', error);
+      const verificationData = error?.data;
+      if (verificationData?.requires_phone_verification) {
+        setPendingRouteName('App');
+        setPendingUserId(getUserId(verificationData));
+        setPendingPhone(
+          String(verificationData.phone || '').replace(/[^0-9]/g, '').slice(0, 15),
+        );
+        setPendingCountryCode(verificationData.country_code || '+91');
+        setShowMobileVerification(true);
+        return;
+      }
+
+      const message =
+        typeof error === 'string'
+          ? error
+          : error?.message || 'Unable to login. Please try again.';
       show({
         type: 'error',
-        title: error,
+        title: message,
       });
     } finally {
       setLoginLoading(false);
@@ -273,6 +445,17 @@ const Login = ({ navigation }: any) => {
           </View>
         </View>
       </KeyboardAwareScrollView>
+      <MobileVerificationModal
+        visible={showMobileVerification}
+        userId={pendingUserId}
+        initialPhone={pendingPhone}
+        initialCountryCode={pendingCountryCode}
+        onSendOtp={sendExistingUserMobileOtp}
+        onVerifyOtp={verifyExistingUserMobileOtp}
+        onSaveInternational={saveInternationalMobile}
+        onVerified={continueAfterMobileVerification}
+        onError={showMobileVerificationError}
+      />
     </SafeAreaView>
   );
 };

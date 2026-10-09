@@ -10,6 +10,72 @@ export const signupApi = async (data: any) => {
   return res.data;
 };
 
+export const startRegistrationApi = async (data: {
+  name: string;
+  user_name: string;
+}) => {
+  const res = await api.post('/newregistration/register/start', data);
+  return res.data;
+};
+
+export const sendRegistrationEmailOtpApi = async (data: {
+  temp_id: number;
+  email: string;
+}) => {
+  const res = await api.post('/newregistration/register/send-email-otp', data);
+  return res.data;
+};
+
+export const verifyRegistrationEmailOtpApi = async (data: {
+  temp_id: number;
+  code: string;
+}) => {
+  const res = await api.post('/newregistration/register/verify-email', data);
+  return res.data;
+};
+
+export const sendRegistrationPhoneOtpApi = async (data: {
+  temp_id: number;
+  phone: string;
+}) => {
+  const res = await api.post('/newregistration/register/send-phone-otp', data);
+  return res.data;
+};
+
+export const verifyRegistrationPhoneOtpApi = async (data: {
+  temp_id: number;
+  code: string;
+}) => {
+  const res = await api.post('/newregistration/register/verify-phone', data);
+  return res.data;
+};
+
+export const sendLoginPhoneOtpApi = async (data: {
+  user_id: number;
+  phone: string;
+  country_code?: string;
+}) => {
+  const res = await api.post('/newregistration/login/send-phone-otp', data);
+  return res.data;
+};
+
+export const verifyLoginPhoneOtpApi = async (data: {
+  user_id: number;
+  code: string;
+}) => {
+  const res = await api.post('/newregistration/login/verify-phone', data);
+  return res.data;
+};
+
+export const createTestRegistrationAccountApi = async (data: {
+  temp_id: number;
+  password: string;
+  confirm_password: string;
+}) => {
+  const res = await api.post('/newregistration/register/create', data);
+  return res.data;
+};
+
 export const loginApi = async (data: any) => {
   const res = await api.post('/auth/login', data);
   return res.data;

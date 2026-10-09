@@ -78,9 +78,7 @@ const ProfileScreen = () => {
 
   // ✅ Redux
   const { user: authUser } = useSelector((state: any) => state.auth);
-  const { user: profileUser, loading } = useSelector(
-    (state: any) => state.profile,
-  );
+  const { user: bookUser, loading } = useSelector((state: any) => state.book);
   const tabsState = useSelector((state: any) => state.profile?.tabs);
   const data = tabsState?.data || [];
   const page = tabsState?.page || 1;
@@ -98,8 +96,6 @@ const ProfileScreen = () => {
   const opportunityPage = opportunitiesState?.page || 1;
   const opportunityLoading = opportunitiesState?.loading;
   const opportunityHasMore = opportunitiesState?.hasMore;
-
-  const { user: bookUser } = useSelector((state: any) => state.book);
 
   const username = route?.params?.isOwnProfile
     ? authUser?.user_name

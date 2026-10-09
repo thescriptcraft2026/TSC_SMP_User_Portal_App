@@ -24,10 +24,10 @@ import PrimaryButton from '../../components/Buttons/PrimaryButton';
 import {
   updateBio,
   getUserThunk,
-  getPrimaryRoles,
 } from '../../redux/slices/authSlice';
 import { useToast } from '../../components/Toast/ToastProvider';
 import FloatingInputTwo from '../../components/Input/FloatingInputTwo';
+import { reset } from '../../../navigationRef';
 
 const BioSetupScreen = ({ navigation, route }: any) => {
   const { show } = useToast();
@@ -74,20 +74,19 @@ const BioSetupScreen = ({ navigation, route }: any) => {
         return;
       }
 
-      // ✅ Always update bio
       await dispatch(
         updateBio({
-          bio: trimmedBio, // "" if user cleared it
+          bio: trimmedBio,
         }),
       ).unwrap();
 
       await AsyncStorage.setItem('bio_setup_completed', 'true');
 
       await dispatch(getUserThunk()).unwrap();
-      await dispatch(getPrimaryRoles());
 
-      navigation.navigate('RoleSetup', {
-        step: 2,
+      reset('App', {
+        screen: 'BottomTab',
+        params: { screen: 'Feed' },
       });
     } catch (error: any) {
       show({
@@ -101,7 +100,11 @@ const BioSetupScreen = ({ navigation, route }: any) => {
 
   const handleSkip = async () => {
     await AsyncStorage.setItem('bio_setup_completed', 'true');
-    navigation.navigate('RoleSetup', { step: 2 });
+    await dispatch(getUserThunk()).unwrap();
+    reset('App', {
+      screen: 'BottomTab',
+      params: { screen: 'Feed' },
+    });
   };
 
   return (

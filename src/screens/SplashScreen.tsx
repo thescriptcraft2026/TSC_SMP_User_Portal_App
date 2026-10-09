@@ -143,7 +143,9 @@ const SplashScreen = ({ navigation }: any) => {
           const user = userData?.data;
 
           const hasPrimary = user?.added_primary_roles === true;
+          const hasSecondary = user?.added_secondary_roles === true;
           const hasUserName = user?.user_name;
+          const hasBio = !!user?.bio?.trim();
 
           if (!hasUserName) {
             reset('Auth', {
@@ -156,7 +158,22 @@ const SplashScreen = ({ navigation }: any) => {
           // Roles not completed
           if (!hasPrimary) {
             reset('Auth', {
-              screen: 'RoleSetupScreen',
+              screen: 'RoleSetup',
+            });
+            return;
+          }
+
+          if (!hasSecondary) {
+            reset('Auth', {
+              screen: 'RoleSetup',
+              params: { step: 3 },
+            });
+            return;
+          }
+
+          if (!hasBio) {
+            reset('Auth', {
+              screen: 'BioSetup',
             });
             return;
           }

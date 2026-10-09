@@ -26,6 +26,7 @@ type Props = {
   checkUsername?: boolean;
   onUsernameCheck?: (username: string) => Promise<any>;
   style?: any;
+  editable?: boolean;
 };
 
 const FloatingInput = ({
@@ -37,6 +38,7 @@ const FloatingInput = ({
   checkUsername,
   onUsernameCheck,
   style,
+  editable = true,
 }: Props) => {
   const isDark = useColorScheme() === 'dark';
   const [focused, setFocused] = useState(false);
@@ -225,8 +227,13 @@ const FloatingInput = ({
         <TextInput
           value={value}
           onChangeText={onChangeText}
+          editable={editable}
           secureTextEntry={secure && !showPassword}
-          style={[styles.input, { color: themeColors.white }]}
+          style={[
+            styles.input,
+            { color: themeColors.white },
+            !editable && styles.disabledInput,
+          ]}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           autoCapitalize="none"
@@ -335,6 +342,10 @@ const styles = StyleSheet.create({
     fontSize: 15,
     paddingRight: 50,
     fontFamily:Fonts.Regular
+  },
+
+  disabledInput: {
+    opacity: 0.72,
   },
 
   toggle: {

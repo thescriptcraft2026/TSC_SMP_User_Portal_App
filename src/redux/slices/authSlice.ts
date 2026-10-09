@@ -1,6 +1,7 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import {
   authWithGoogleApi,
+  createTestRegistrationAccountApi,
   forgotPassword,
   getPrimaryRolesApi,
   getSecondaryRolesApi,
@@ -11,13 +12,20 @@ import {
   logoutApi,
   resendOtpApi,
   resetPasswordApi,
+  sendLoginPhoneOtpApi,
+  sendRegistrationEmailOtpApi,
+  sendRegistrationPhoneOtpApi,
   signupApi,
+  startRegistrationApi,
   updateBioApi,
   updatePrimaryRolesApi,
   updateProfileApi,
   updateSecondaryRolesApi,
   verifyForgotOtpApi,
+  verifyLoginPhoneOtpApi,
   verifyOtpApi,
+  verifyRegistrationEmailOtpApi,
+  verifyRegistrationPhoneOtpApi,
 } from '../../services/authApi';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -85,6 +93,167 @@ export const signup = createAsyncThunk(
   },
 );
 
+// Register email OTP
+export const sendRegistrationEmailOtp = createAsyncThunk(
+  'auth/sendRegistrationEmailOtp',
+  async (data: { temp_id: number; email: string }, { rejectWithValue }) => {
+    try {
+      const res = await sendRegistrationEmailOtpApi(data);
+      return res;
+    } catch (error: any) {
+      return rejectWithValue(
+        error?.response?.data?.errors?.[0]?.message ||
+          error?.response?.data?.errors?.message ||
+          error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          error?.message,
+      );
+    }
+  },
+);
+
+// Start test registration session
+export const startRegistration = createAsyncThunk(
+  'auth/startRegistration',
+  async (data: { name: string; user_name: string }, { rejectWithValue }) => {
+    try {
+      const res = await startRegistrationApi(data);
+      return res;
+    } catch (error: any) {
+      return rejectWithValue(
+        error?.response?.data?.errors?.[0]?.message ||
+          error?.response?.data?.errors?.message ||
+          error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          error?.message,
+      );
+    }
+  },
+);
+
+// Verify test registration email OTP
+export const verifyRegistrationEmailOtp = createAsyncThunk(
+  'auth/verifyRegistrationEmailOtp',
+  async (data: { temp_id: number; code: string }, { rejectWithValue }) => {
+    try {
+      const res = await verifyRegistrationEmailOtpApi(data);
+      return res;
+    } catch (error: any) {
+      return rejectWithValue(
+        error?.response?.data?.errors?.[0]?.message ||
+          error?.response?.data?.errors?.message ||
+          error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          error?.message,
+      );
+    }
+  },
+);
+
+// Send test registration mobile OTP
+export const sendRegistrationPhoneOtp = createAsyncThunk(
+  'auth/sendRegistrationPhoneOtp',
+  async (data: { temp_id: number; phone: string }, { rejectWithValue }) => {
+    try {
+      const res = await sendRegistrationPhoneOtpApi(data);
+      return res;
+    } catch (error: any) {
+      return rejectWithValue(
+        error?.response?.data?.errors?.[0]?.message ||
+          error?.response?.data?.errors?.message ||
+          error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          error?.message,
+      );
+    }
+  },
+);
+
+// Verify test registration mobile OTP
+export const verifyRegistrationPhoneOtp = createAsyncThunk(
+  'auth/verifyRegistrationPhoneOtp',
+  async (data: { temp_id: number; code: string }, { rejectWithValue }) => {
+    try {
+      const res = await verifyRegistrationPhoneOtpApi(data);
+      return res;
+    } catch (error: any) {
+      return rejectWithValue(
+        error?.response?.data?.errors?.[0]?.message ||
+          error?.response?.data?.errors?.message ||
+          error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          error?.message,
+      );
+    }
+  },
+);
+
+// Create account after test registration verification
+export const createTestRegistrationAccount = createAsyncThunk(
+  'auth/createTestRegistrationAccount',
+  async (
+    data: {
+      temp_id: number;
+      password: string;
+      confirm_password: string;
+    },
+    { rejectWithValue },
+  ) => {
+    try {
+      const res = await createTestRegistrationAccountApi(data);
+      return res;
+    } catch (error: any) {
+      return rejectWithValue(
+        error?.response?.data?.errors?.[0]?.message ||
+          error?.response?.data?.errors?.message ||
+          error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          error?.message,
+      );
+    }
+  },
+);
+
+// Existing user mobile OTP after login
+export const sendLoginPhoneOtp = createAsyncThunk(
+  'auth/sendLoginPhoneOtp',
+  async (
+    data: { user_id: number; phone: string; country_code?: string },
+    { rejectWithValue },
+  ) => {
+    try {
+      const res = await sendLoginPhoneOtpApi(data);
+      return res;
+    } catch (error: any) {
+      return rejectWithValue(
+        error?.response?.data?.errors?.[0]?.message ||
+          error?.response?.data?.errors?.message ||
+          error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          error?.message,
+      );
+    }
+  },
+);
+
+export const verifyLoginPhoneOtp = createAsyncThunk(
+  'auth/verifyLoginPhoneOtp',
+  async (data: { user_id: number; code: string }, { rejectWithValue }) => {
+    try {
+      const res = await verifyLoginPhoneOtpApi(data);
+      return res;
+    } catch (error: any) {
+      return rejectWithValue(
+        error?.response?.data?.errors?.[0]?.message ||
+          error?.response?.data?.errors?.message ||
+          error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          error?.message,
+      );
+    }
+  },
+);
+
 // Login
 export const login = createAsyncThunk(
   'auth/login',
@@ -93,9 +262,24 @@ export const login = createAsyncThunk(
       const res = await loginApi(data);
       return res;
     } catch (error: any) {
-      console.log('res logindscadsc', error.response?.data?.message);
+      console.log('LOGIN ERROR =>', {
+        status: error?.response?.status,
+        data: error?.response?.data,
+        message: error?.message,
+      });
+      if (error?.response?.data?.data?.requires_phone_verification) {
+        return rejectWithValue({
+          message:
+            error?.response?.data?.message ||
+            'Please verify your mobile number to continue',
+          status: error?.response?.status,
+          data: error?.response?.data?.data,
+        });
+      }
+
       return rejectWithValue(
-        error?.response?.data?.errors?.message ||
+        error?.response?.data?.errors?.[0]?.message ||
+          error?.response?.data?.errors?.message ||
           error?.response?.data?.message ||
           error?.response?.data?.error ||
           error?.message,
@@ -201,18 +385,30 @@ export const logoutUser = createAsyncThunk(
     try {
       const refreshToken = await AsyncStorage.getItem('userRefreshToken');
 
-      await logoutApi(refreshToken || '');
+      if (refreshToken) {
+        await logoutApi(refreshToken);
+      }
 
-      // clear storage
       await AsyncStorage.multiRemove(['userAccessToken', 'userRefreshToken']);
 
       return true;
     } catch (error: any) {
-      return rejectWithValue(
+      const message =
         error?.response?.data?.errors?.message ||
-          error?.response?.data?.message ||
-          error?.response?.data?.error ||
-          error?.message,
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message;
+
+      if (
+        error?.response?.status === 401 &&
+        String(message || '').toLowerCase().includes('refresh token')
+      ) {
+        await AsyncStorage.multiRemove(['userAccessToken', 'userRefreshToken']);
+        return true;
+      }
+
+      return rejectWithValue(
+        message,
       );
     }
   },

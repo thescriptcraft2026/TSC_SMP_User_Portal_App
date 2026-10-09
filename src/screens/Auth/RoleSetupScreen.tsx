@@ -241,10 +241,6 @@ const RoleSetupScreen = ({ navigation, route }: any) => {
   };
 
   const prevStep = () => {
-    if (step === 2) {
-      navigation.navigate('BioSetup');
-      return;
-    }
     setStep((prev: any) => prev - 1);
     animateStep();
   };
@@ -300,10 +296,10 @@ const RoleSetupScreen = ({ navigation, route }: any) => {
 
         show({
           type: 'success',
-          title: 'Setup complete!',
+          title: 'Roles updated!',
         });
 
-        reset('App');
+        navigation.replace('BioSetup');
         return;
       }
     } catch (error: any) {
@@ -332,7 +328,7 @@ const RoleSetupScreen = ({ navigation, route }: any) => {
       return;
     }
 
-    navigation.navigate('App');
+    navigation.replace('BioSetup');
   }, [initialStep, user]);
 
   return (
