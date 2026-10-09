@@ -1,5 +1,9 @@
 import { navigate, navigationRef } from '../../navigationRef';
-import { setPendingDeepLink } from './deepLinkStore';
+import {
+  clearPendingDeepLink,
+  getPendingDeepLink,
+  setPendingDeepLink,
+} from './deepLinkStore';
 
 export const handleDeepLink = (url: string) => {
   if (!url) return;
@@ -150,4 +154,27 @@ export const handleDeepLink = (url: string) => {
     default:
       console.log('Unknown deep link:', route);
   }
+};
+
+/**
+ * Opens a link that was saved while the user was logged out / still setting up.
+ * Called whenever navigation state changes, so it fires right after login,
+ * signup or profile setup puts the user inside the App stack.
+ */
+let openingPending = false;
+export const openPendingDeepLink = () => {
+  if (openingPending || !navigationRef.isReady()) return;
+  const url = getPendingDeepLink();
+  if (!url) return;
+  if (!navigationRef.getRootState()?.routes?.some(r => r.name === 'App')) {
+    return;
+  }
+
+  openingPending = true;
+  clearPendingDeepLink();
+  // let the App stack finish mounting before navigating into it
+  setTimeout(() => {
+    openingPending = false;
+    handleDeepLink(url);
+  }, 500);
 };

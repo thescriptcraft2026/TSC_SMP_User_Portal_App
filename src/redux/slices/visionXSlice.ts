@@ -252,6 +252,7 @@ const visionXSlice = createSlice({
       })
       .addCase(getVisionXByIdThunk.rejected, (state, action: any) => {
         state.loading = false;
+        state.selectedVisionX = null; // never show the previous item for a failed link
         state.error = action.payload;
       })
 

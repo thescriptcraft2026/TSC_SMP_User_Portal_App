@@ -12,6 +12,7 @@ import {
   useColorScheme,
   View,
 } from 'react-native';
+import ContentNotFound from '../../components/NotFound/ContentNotFound';
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import {
   useFocusEffect,
@@ -57,6 +58,7 @@ import Note from '../../assets/SVG/Note';
 import RenderHtml from 'react-native-render-html';
 
 const { width } = Dimensions.get('window');
+const TITLE_AREA_HEIGHT = 120;
 const CARD_MARGIN = 10;
 const CARD_WIDTH = 180;
 
@@ -68,6 +70,7 @@ const SingleMovieDetails = () => {
   const dispatch = useDispatch<any>();
   const { show } = useToast();
   const [imageError, setImageError] = useState(false);
+  const [imageHeight, setImageHeight] = useState(width * 0.56);
   const [showReactions, setShowReactions] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [visibleReviews, setVisibleReviews] = useState(3);
@@ -106,9 +109,14 @@ const SingleMovieDetails = () => {
     : '0.0';
 
   // 🔥 FETCH
+  const [fetchDone, setFetchDone] = useState(false);
   useFocusEffect(
     useCallback(() => {
-      if (id) dispatch(getMovieById(id));
+      if (!id) {
+        setFetchDone(true);
+        return;
+      }
+      dispatch(getMovieById(id)).finally(() => setFetchDone(true));
     }, [id]),
   );
 
@@ -277,6 +285,17 @@ const SingleMovieDetails = () => {
   }, [dispatch, id]);
 
   // ✅ 👉 PLACE IT HERE (BEFORE RETURN UI)
+  if (fetchDone && !detailsLoading && !selectedMovies) {
+    return (
+      <ContentNotFound
+        headerTitle="Movie Details"
+        title="Movie Not Found"
+        description="This movie doesn't exist, may have been deleted, or is no longer available."
+        icon="film-outline"
+      />
+    );
+  }
+
   if (detailsLoading || !selectedMovies) {
     return <SingleMovieDetailsSkeleton />;
   }
@@ -329,21 +348,34 @@ const SingleMovieDetails = () => {
           }}
         >
           {/* IMAGE */}
-          <View style={styles.imageWrapper}>
+          {/* image keeps its full natural size; extra space below holds the title/badges overlay */}
+          <View
+            style={[
+              styles.imageWrapper,
+              { height: imageHeight + TITLE_AREA_HEIGHT },
+            ]}
+          >
             <FastImage
-              style={styles.image}
+              style={[styles.image, { height: imageHeight }]}
+              onLoad={e => {
+                const { width: w, height: h } = e.nativeEvent;
+                if (w && h) {
+                  // full width, natural height: nothing cropped
+                  setImageHeight(width * (h / w));
+                }
+              }}
               onError={() => setImageError(true)}
               source={
-                imageError || !selectedMovies?.coverimage
+                imageError || !(selectedMovies?.bannerimage || selectedMovies?.coverimage)
                   ? require('../../assets/images/fallback.png')
                   : {
                     uri:
-                      selectedMovies?.coverimage ||
-                      selectedMovies?.bannerimage,
+                      selectedMovies?.bannerimage ||
+                      selectedMovies?.coverimage,
                     priority: FastImage.priority.high,
                   }
               }
-              resizeMode={FastImage.resizeMode.cover}
+              resizeMode={FastImage.resizeMode.contain}
             />
 
             {/* TOP OVERLAY */}

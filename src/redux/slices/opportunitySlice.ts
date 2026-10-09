@@ -438,6 +438,8 @@ const opportunitySlice = createSlice({
         (state, action: any) => {
           state.loading = false;
           state.detailsLoading = false;
+          // drop stale data so a failed/deleted opportunity never shows the previous one
+          state.selectedOpportunity = null;
           state.error = action.payload;
         },
       )

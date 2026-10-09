@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import ContentNotFound from '../../components/NotFound/ContentNotFound';
 import {
   View,
   Text,
@@ -270,9 +271,16 @@ const SingleVisionXDetails = () => {
     }
   }, [dispatch, visionxId]);
 
+  const [fetchDone, setFetchDone] = useState(false);
   useFocusEffect(
     useCallback(() => {
-      if (visionxId) dispatch(getVisionXByIdThunk(visionxId));
+      if (!visionxId) {
+        setFetchDone(true);
+        return;
+      }
+      dispatch(getVisionXByIdThunk(visionxId)).finally(() =>
+        setFetchDone(true),
+      );
     }, [visionxId]),
   );
 
@@ -283,54 +291,18 @@ const SingleVisionXDetails = () => {
   });
 
   // ✅ 👉 PLACE IT HERE (BEFORE RETURN UI)
-  if (loading) {
+  if (loading || (!fetchDone && !selectedVisionX?.id)) {
     return <SingleMovieDetailsSkeleton />;
   }
 
   if (!selectedVisionX?.id) {
     return (
-      <SafeAreaView
-        style={[
-          styles.safeArea,
-          {
-            backgroundColor,
-            justifyContent: 'center',
-            alignItems: 'center',
-            paddingHorizontal: 24,
-          },
-        ]}
-      >
-        <NoData size={120} color="#FFF" />
-        <Text
-          style={{
-            color: '#FFF',
-            fontSize: 18,
-            fontFamily: Fonts.SemiBold,
-            marginTop: 6,
-            textAlign: 'center',
-          }}
-        >
-          Content Not Found
-        </Text>
-
-        <Text
-          style={{
-            color: '#999',
-            fontSize: 14,
-            marginTop: 10,
-            textAlign: 'center',
-            lineHeight: 22,
-          }}
-        >
-          This content has been removed or you don't have permission to view it.
-        </Text>
-
-        <PrimaryButton
-          title="Go Back"
-          style={{ marginTop: 30, width: 180 }}
-          onPress={() => navigation.goBack()}
-        />
-      </SafeAreaView>
+      <ContentNotFound
+        headerTitle="Details"
+        title="Content Not Found"
+        description="This content doesn't exist, may have been removed, or you don't have permission to view it."
+        icon="sparkles-outline"
+      />
     );
   }
 

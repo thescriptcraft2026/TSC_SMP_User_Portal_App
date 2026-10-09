@@ -326,7 +326,7 @@ const AddBook = () => {
                   error={errors.title?.message}
                   maxLength={Limits.TitleMax}
                 />
-                <CharacterCount value={value} limit={Limits.TitleMax} />
+                 <CharacterCount value={value} limit={Limits.TitleMax} />
                 </>
               )}
             />

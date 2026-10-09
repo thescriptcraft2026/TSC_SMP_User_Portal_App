@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import ContentNotFound from '../../components/NotFound/ContentNotFound';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   SafeAreaView,
@@ -160,9 +161,14 @@ const BookDetails = () => {
     decodedHTML.replace(/<[^>]*>/g, '').trim().length > TRUNCATE_LENGTH;
 
   // 🔥 FETCH
+  const [fetchDone, setFetchDone] = useState(false);
   useFocusEffect(
     useCallback(() => {
-      if (bookId) dispatch(getBookByIdThunk(bookId));
+      if (!bookId) {
+        setFetchDone(true);
+        return;
+      }
+      dispatch(getBookByIdThunk(bookId)).finally(() => setFetchDone(true));
     }, [bookId]),
   );
 
@@ -350,6 +356,17 @@ const BookDetails = () => {
       navigation.navigate('BottomTab');
     }
   };
+
+  if (fetchDone && !loading && !selectedBook) {
+    return (
+      <ContentNotFound
+        headerTitle="Book Details"
+        title="Book Not Found"
+        description="This book doesn't exist, may have been deleted, or is no longer available."
+        icon="book-outline"
+      />
+    );
+  }
 
   return (
     <SafeAreaView

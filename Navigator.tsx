@@ -3,6 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { navigationRef } from './navigationRef';
 import { openPendingContest } from './src/referral/referralService';
+import { openPendingDeepLink } from './src/utils/handleDeepLink';
 import BottomTabs from './src/navigation/BottomTab';
 import SplashScreen from './src/screens/SplashScreen';
 import Login from './src/screens/Auth/Login';
@@ -64,6 +65,19 @@ import RepostDetails from './src/components/Post/RepostDetails';
 import NotFoundScreen from './src/screens/NotFoundScreen';
 
 const Stack = createNativeStackNavigator();
+
+// Dev helper: prints the deepest active route, e.g. "App > BottomTab > Home"
+const logActiveScreen = () => {
+  if (!__DEV__ || !navigationRef.isReady()) return;
+  const names: string[] = [];
+  let state: any = navigationRef.getRootState();
+  while (state?.routes) {
+    const route = state.routes[state.index ?? 0];
+    names.push(route.name);
+    state = route.state;
+  }
+  console.log('📍 ACTIVE SCREEN:', names.join(' > '));
+};
 
 // ✅ AUTH STACK
 const AuthStack = () => {
@@ -180,8 +194,16 @@ const Navigator = () => {
   return (
     <NavigationContainer
       ref={navigationRef}
-      onReady={openPendingContest}
-      onStateChange={openPendingContest}
+      onReady={() => {
+        logActiveScreen();
+        openPendingContest();
+        openPendingDeepLink();
+      }}
+      onStateChange={() => {
+        logActiveScreen();
+        openPendingContest();
+        openPendingDeepLink();
+      }}
     >
       <Stack.Navigator
         initialRouteName="Splash"

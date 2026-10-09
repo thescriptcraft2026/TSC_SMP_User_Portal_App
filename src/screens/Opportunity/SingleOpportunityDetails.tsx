@@ -39,6 +39,7 @@ import {
 import { formatDate } from '../../utils/date';
 
 import { useToast } from '../../components/Toast/ToastProvider';
+import ContentNotFound from '../../components/NotFound/ContentNotFound';
 import OpportunityDetailsSkeleton from '../../components/skeleton/OpportunityDetailsSkeleton';
 import { createReport, getReports } from '../../redux/slices/reportSlice';
 import ReportModal from '../../components/Modals/ReportModal';
@@ -85,9 +86,16 @@ const SingleOpportunityDetails = () => {
   const { user: authUser } = useSelector((state: any) => state.auth);
 
   // 🔥 FETCH
+  const [fetchDone, setFetchDone] = useState(false);
   useFocusEffect(
     useCallback(() => {
-      if (opp_id) dispatch(getOpportunityDetailsByIdThunk(opp_id));
+      if (!opp_id) {
+        setFetchDone(true);
+        return;
+      }
+      dispatch(getOpportunityDetailsByIdThunk(opp_id)).finally(() =>
+        setFetchDone(true),
+      );
     }, [opp_id]),
   );
 
@@ -330,6 +338,17 @@ const SingleOpportunityDetails = () => {
   };
 
   // 👇 ADD HERE
+  if (fetchDone && !detailsLoading && !selectedOpportunity) {
+    return (
+      <ContentNotFound
+        headerTitle="Opportunity Details"
+        title="Opportunity Not Found"
+        description="This opportunity doesn't exist, may have been deleted, or is no longer available."
+        icon="briefcase-outline"
+      />
+    );
+  }
+
   if (detailsLoading || !selectedOpportunity) {
     return <OpportunityDetailsSkeleton />;
   }

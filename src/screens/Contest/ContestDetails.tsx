@@ -9,6 +9,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import ContentNotFound from '../../components/NotFound/ContentNotFound';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   useFocusEffect,
@@ -141,11 +142,17 @@ const ContestDetails = () => {
 
   const isUpcoming = !hasStarted;
 
+  const [fetchDone, setFetchDone] = useState(false);
   useFocusEffect(
     useCallback(() => {
-      if (!contestId) return;
+      if (!contestId) {
+        setFetchDone(true);
+        return;
+      }
 
-      dispatch(getContestByIdThunk(contestId));
+      dispatch(getContestByIdThunk(contestId)).finally(() =>
+        setFetchDone(true),
+      );
       dispatch(getContestStatusThunk(contestId));
     }, [contestId]),
   );
@@ -262,6 +269,17 @@ const ContestDetails = () => {
 
   const showViewSubmissions =
     selectedContest?.publish_winners || contestStatus === 'completed';
+
+  if (fetchDone && !loading && !selectedContest) {
+    return (
+      <ContentNotFound
+        headerTitle="Contest Details"
+        title="Contest Not Found"
+        description="This contest doesn't exist, may have been deleted, or is no longer available."
+        icon="trophy-outline"
+      />
+    );
+  }
 
   if (loading || !selectedContest) {
     return <ContestDetailsSkeleton />;

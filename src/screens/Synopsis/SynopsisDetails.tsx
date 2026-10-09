@@ -11,6 +11,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import ContentNotFound from '../../components/NotFound/ContentNotFound';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   SafeAreaView,
@@ -147,9 +148,14 @@ const SynopsisDetails = () => {
 
   const showSeeMore = decodedHTML.length > TRUNCATE_LENGTH;
 
+  const [fetchDone, setFetchDone] = useState(false);
   useFocusEffect(
     useCallback(() => {
-      if (synopsisId) dispatch(getBookByIdThunk(synopsisId));
+      if (!synopsisId) {
+        setFetchDone(true);
+        return;
+      }
+      dispatch(getBookByIdThunk(synopsisId)).finally(() => setFetchDone(true));
     }, [synopsisId]),
   );
 
@@ -316,6 +322,17 @@ const SynopsisDetails = () => {
       navigation.navigate('BottomTab');
     }
   };
+
+  if (fetchDone && !loading && !selectedSynopses) {
+    return (
+      <ContentNotFound
+        headerTitle="Synopsis Details"
+        title="Synopsis Not Found"
+        description="This synopsis doesn't exist, may have been deleted, or is no longer available."
+        icon="document-text-outline"
+      />
+    );
+  }
 
   return (
     <SafeAreaView

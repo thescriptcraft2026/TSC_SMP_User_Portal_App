@@ -391,6 +391,7 @@ const moviesSlice = createSlice({
 
       .addCase(getMovieById.rejected, (state, action: any) => {
         state.detailsLoading = false;
+        state.selectedMovies = null; // never show the previous movie for a failed link
         state.error = action.payload as string;
       })
 
