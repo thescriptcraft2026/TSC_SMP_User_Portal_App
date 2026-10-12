@@ -270,7 +270,13 @@ const AddSynopsis = () => {
           </Text>
           <Controller
             control={control}
-            rules={{ required: 'Title is required' }}
+            rules={{
+              required: 'Title is required',
+              minLength: {
+                value: Limits.TitleMin,
+                message: `Title must be at least ${Limits.TitleMin} characters`,
+              },
+            }}
             name="title"
             render={({ field: { onChange, value } }) => (
               <>
@@ -281,7 +287,11 @@ const AddSynopsis = () => {
                   error={errors.title?.message}
                   maxLength={Limits.TitleMax}
                 />
-                <CharacterCount value={value} limit={Limits.TitleMax} />
+                <CharacterCount
+                  value={value}
+                  limit={Limits.TitleMax}
+                  hint={`Minimum ${Limits.TitleMin} characters, Maximum ${Limits.TitleMax} characters`}
+                />
               </>
             )}
           />
@@ -338,6 +348,9 @@ const AddSynopsis = () => {
                   }}
                   error={errors.images?.message as string | undefined}
                 />
+                <Text style={[styles.helperText, { color: themeColors.secondary }]}>
+                  Recommended size: 400 × 600 px or similar cover ratio
+                </Text>
               </>
             )}
           />
@@ -472,6 +485,12 @@ const AddSynopsis = () => {
           </View>
         )}
 
+        <Text style={[styles.helperText, { color: themeColors.secondary }]}>
+          Note : We request you to get your script registered in any of the
+          recognized writers associations before you upload the synopses on to
+          the The Script Craft platform.
+        </Text>
+
         <PrimaryButton
           // title={publish ? 'Publish Book' : 'Post Book'}
           title={isEdit ? 'Update' : 'Submit'}
@@ -487,6 +506,12 @@ const AddSynopsis = () => {
 export default AddSynopsis;
 
 const styles = StyleSheet.create({
+  helperText: {
+    fontSize: 12,
+    fontFamily: Fonts.Regular,
+    marginTop: 8,
+    marginBottom: 12,
+  },
   safeArea: {
     flex: 1,
   },

@@ -200,6 +200,13 @@ const EditBook = () => {
           <Controller
             control={control}
             name="title"
+            rules={{
+                required: 'Title is required',
+                minLength: {
+                  value: Limits.TitleMin,
+                  message: `Title must be at least ${Limits.TitleMin} characters`,
+                },
+              }}
             render={({ field: { onChange, value } }) => (
               <>
               <FloatingInputTwo
@@ -209,7 +216,7 @@ const EditBook = () => {
                 error={errors.title?.message}
                 maxLength={Limits.TitleMax}
               />
-              <CharacterCount value={value} limit={Limits.TitleMax} />
+              <CharacterCount value={value} limit={Limits.TitleMax} hint={`Minimum ${Limits.TitleMin} characters, Maximum ${Limits.TitleMax} characters`} />
               </>
             )}
           />
@@ -249,7 +256,12 @@ const EditBook = () => {
             control={control}
             name="images"
             render={({ field: { value, onChange } }) => (
-              <ImageUploader images={value} onChange={onChange} />
+              <>
+                <ImageUploader images={value} onChange={onChange} />
+                <Text style={{ fontSize: 12, fontFamily: Fonts.Regular, color: themeColors.secondary, marginTop: 8 }}>
+                  Recommended size: 400 × 600 px or similar cover ratio
+                </Text>
+              </>
             )}
           />
         </View>

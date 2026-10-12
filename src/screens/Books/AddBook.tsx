@@ -174,8 +174,11 @@ const AddBook = () => {
     try {
       setSubmitting(true);
 
-      if (!data.title?.trim()) {
-        show({ type: 'error', title: 'Title is required' });
+      if (!data.title?.trim() || data.title.trim().length < Limits.TitleMin) {
+        show({
+          type: 'error',
+          title: `Title must be at least ${Limits.TitleMin} characters`,
+        });
         return;
       }
 
@@ -315,7 +318,13 @@ const AddBook = () => {
             </Text>
             <Controller
               control={control}
-              rules={{ required: 'Title is required' }}
+              rules={{
+                required: 'Title is required',
+                minLength: {
+                  value: Limits.TitleMin,
+                  message: `Title must be at least ${Limits.TitleMin} characters`,
+                },
+              }}
               name="title"
               render={({ field: { onChange, value } }) => (
                 <>
@@ -326,7 +335,7 @@ const AddBook = () => {
                   error={errors.title?.message}
                   maxLength={Limits.TitleMax}
                 />
-                 <CharacterCount value={value} limit={Limits.TitleMax} />
+                 <CharacterCount value={value} limit={Limits.TitleMax} hint={`Minimum ${Limits.TitleMin} characters, Maximum ${Limits.TitleMax} characters`} />
                 </>
               )}
             />
@@ -386,6 +395,9 @@ const AddBook = () => {
                     }}
                     error={errors.images?.message?.toString()}
                   />
+                  <Text style={{ fontSize: 12, fontFamily: Fonts.Regular, color: themeColors.secondary, marginTop: 8 }}>
+                    Recommended size: 400 × 600 px or similar cover ratio
+                  </Text>
                 </>
               )}
             />

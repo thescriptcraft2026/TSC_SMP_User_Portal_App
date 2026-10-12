@@ -416,7 +416,13 @@ const AddVisionX = () => {
           <Controller
             control={control}
             name="title"
-            rules={{ required: 'Title is required' }}
+            rules={{
+              required: 'Title is required',
+              minLength: {
+                value: Limits.TitleMin,
+                message: `Title must be at least ${Limits.TitleMin} characters`,
+              },
+            }}
             render={({ field: { value, onChange } }) => (
               <>
                 <FloatingInputTwo
@@ -426,7 +432,11 @@ const AddVisionX = () => {
                   error={errors.title?.message as string | undefined}
                   maxLength={Limits.TitleMax}
                 />
-                <CharacterCount value={value} limit={Limits.TitleMax} />
+                <CharacterCount
+                  value={value}
+                  limit={Limits.TitleMax}
+                  hint={`Minimum ${Limits.TitleMin} characters, Maximum ${Limits.TitleMax} characters`}
+                />
               </>
             )}
           />
@@ -519,6 +529,9 @@ const AddVisionX = () => {
                   }}
                   error={errors.images?.message as string | undefined}
                 />
+                <Text style={styles.helperText}>
+                  Recommended size: 400 × 600 px or similar cover ratio
+                </Text>
               </>
             )}
           />
@@ -611,6 +624,12 @@ const AddVisionX = () => {
 export default AddVisionX;
 
 const styles = StyleSheet.create({
+  helperText: {
+    fontSize: 12,
+    fontFamily: Fonts.Regular,
+    color: themeColors.secondary,
+    marginTop: 8,
+  },
   safeArea: { flex: 1 },
 
   container: {

@@ -190,7 +190,7 @@ const TagInput = ({
       </View>
 
       {/* ERROR */}
-      {error && <Text style={styles.error}>{error}</Text>}
+      {!!error && <Text style={styles.error}>{error}</Text>}
     </View>
   );
 };

@@ -43,7 +43,7 @@ export const useShare = (initialData?: ShareProps) => {
 
       switch (type) {
         case 'movie':
-          deepLink = `${BASE_URL}/movies/${value}`;
+          deepLink = `${BASE_URL}/unfiltered/${value}`;
           break;
         case 'book':
           deepLink = `${BASE_URL}/books/${value}`;

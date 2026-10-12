@@ -204,7 +204,7 @@ const FloatingInputTwo = ({
         <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
           <View style={{ flex: 1, position: 'relative' }}>
             {/* Highlight Layer - only render when enableMentions is true */}
-            {enableMentions && value && (
+            {enableMentions && !!value && (
               <Text
                 style={[
                   styles.input,
@@ -308,7 +308,7 @@ const FloatingInputTwo = ({
       )}
 
       {/* Error */}
-      {error && <Text style={styles.error}>{error}</Text>}
+      {!!error && <Text style={styles.error}>{error}</Text>}
     </View>
   );
 };

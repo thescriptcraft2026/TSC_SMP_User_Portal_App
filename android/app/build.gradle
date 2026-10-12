@@ -85,8 +85,8 @@ android {
         applicationId "com.rnscriptcarft"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 44
-        versionName "1.9.3"
+        versionCode 46
+        versionName "1.10.0"
         resValue "string", "build_config_package", "com.rnscriptcarft"
     }
     signingConfigs {
