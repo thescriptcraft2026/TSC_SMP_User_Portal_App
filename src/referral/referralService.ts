@@ -40,8 +40,10 @@ const parseQuery = (query: string) => {
   return out;
 };
 
-/** Parses a shared URL, e.g. https://host/contests/{id}?influencer=venky */
-export const parseReferralUrl = (url: string) => {
+const isParticipantLink = (url: string) =>
+  /\/contests?\/[^/?#]+\/participants\//i.test(url);
+
+export const parseReferralUrl =(url: string) => {
   const [beforeHash] = url.split('#');
   const [base, query = ''] = beforeHash.split('?');
   const match = base.match(/\/contests?\/([^/?#]+)/i);
@@ -103,11 +105,10 @@ export const clearContest = async () => {
  * Returns true if the URL carried a contest (so the caller can skip generic routing).
  */
 export const saveReferralFromUrl = async (url: string): Promise<boolean> => {
-  if (!url) return false;
+  if (!url || isParticipantLink(url)) return false;
   const { contestId, influencer } = parseReferralUrl(url);
   if (!contestId) return false;
 
-  // dedupe: getInitialURL + 'url' listener may both deliver the same URL
   const last = await AsyncStorage.getItem(LAST_URL_KEY);
   if (last === url) return true;
   await AsyncStorage.setItem(LAST_URL_KEY, url);
@@ -117,7 +118,6 @@ export const saveReferralFromUrl = async (url: string): Promise<boolean> => {
   return true;
 };
 
-/** Reads the Google Play install referrer ONCE (first launch). Android only. */
 export const checkInstallReferrerOnce = async () => {
   if (Platform.OS !== 'android') return;
   try {
