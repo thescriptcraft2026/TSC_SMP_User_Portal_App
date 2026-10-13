@@ -96,7 +96,7 @@ export const handleDeepLink = (url: string) => {
   }
 
   const KNOWN_TYPES = [
-    'book', 'books', 'movie', 'movies', 'post', 'posts', 'contest',
+    'book', 'books', 'movie', 'movies', 'unfiltered', 'post', 'posts', 'contest',
     'contests', 'synopsis', 'synopses', 'synopsys', 'vision', 'visionx',
     'creators-zone', 'opportunity', 'opportunities', 'profile',
   ];
@@ -117,6 +117,7 @@ export const handleDeepLink = (url: string) => {
 
     case 'movie':
     case 'movies':
+    case 'unfiltered':
       navigate('SingleMovieDetails', { id: value });
       break;
 

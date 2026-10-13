@@ -27,7 +27,10 @@ import {
   requestUserPermission,
 } from './src/services/notificationService';
 import { setPendingDeepLink } from './src/utils/deepLinkStore';
-import { handleDeepLink } from './src/utils/handleDeepLink';
+import {
+  handleDeepLink,
+  openPendingDeepLink,
+} from './src/utils/handleDeepLink';
 import {
   checkInstallReferrerOnce,
   openPendingContest,
@@ -128,6 +131,11 @@ const AppWrapper = () => {
         openPendingContest();
       } else {
         setPendingDeepLink(url);
+        // getInitialURL can resolve after Splash already opened the App stack;
+        // without this these links would sit unused and the user stays on Home.
+        if (/\/(contests?\/[^/?#]+\/participants|unfiltered)\//i.test(url)) {
+          openPendingDeepLink();
+        }
       }
     });
 
