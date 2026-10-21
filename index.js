@@ -41,7 +41,9 @@ notifee.onBackgroundEvent(async ({ type, detail }) => {
 
 // 🔥 FIREBASE BACKGROUND MESSAGE
 messaging().setBackgroundMessageHandler(async remoteMessage => {
-  console.log('Background Message => ', remoteMessage);
+  // Notification messages are displayed automatically by Firebase while
+  // backgrounded. Only display data-only messages here to avoid duplicates.
+  if (remoteMessage?.notification) return;
   
   await notifee.createChannel({
     id: 'default_sound',
@@ -57,6 +59,13 @@ messaging().setBackgroundMessageHandler(async remoteMessage => {
       channelId: 'default_sound',
       importance: AndroidImportance.HIGH,
       sound: 'default',
+      largeIcon: remoteMessage?.data?.image,
+      style: remoteMessage?.data?.image
+        ? {
+            type: 'BIGPICTURE',
+            picture: remoteMessage.data.image,
+          }
+        : undefined,
       pressAction: {
         id: 'default',
       },
@@ -65,6 +74,7 @@ messaging().setBackgroundMessageHandler(async remoteMessage => {
     ios: {
       sound: 'default',
     },
+    data: remoteMessage?.data || {},
   });
 });
 

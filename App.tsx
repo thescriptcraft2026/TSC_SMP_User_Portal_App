@@ -13,16 +13,11 @@ import { Provider, useSelector } from 'react-redux';
 import analytics from '@react-native-firebase/analytics';
 import {
   request,
-  PERMISSIONS,
-  RESULTS,
-  checkNotifications,
-  requestNotifications,
 } from 'react-native-permissions';
 import { store } from './src/redux/store';
 import { ToastProvider } from './src/components/Toast/ToastProvider';
 import { SocketProvider } from './src/context/SocketContext';
 import {
-  createNotificationChannel,
   notificationListener,
   requestUserPermission,
 } from './src/services/notificationService';
@@ -47,10 +42,6 @@ const AppWrapper = () => {
 
   // 🔥 NOTIFICATION + DEEPLINK SETUP
   useEffect(() => {
-    let notificationCleanup: (() => void) | undefined;
-    let unsubscribeTokenRefresh: (() => void) | undefined;
-
-
     const init = async () => {
       try {
         console.log('====================');
@@ -59,15 +50,6 @@ const AppWrapper = () => {
 
         // ✅ CHECK ALL PERMISSIONS
         await checkPermissions();
-
-        // ✅ FCM PERMISSION
-        unsubscribeTokenRefresh = await requestUserPermission();
-
-        // ✅ CREATE CHANNEL
-        await createNotificationChannel();
-
-        // ✅ START LISTENERS
-        notificationCleanup = await notificationListener();
 
         // ✅ CHECK FOR APP UPDATE
         // Wrap in a tiny delay to ensure the splash screen or initial layout doesn't overlap immediately
@@ -120,33 +102,38 @@ const AppWrapper = () => {
     return () => {
       subscription.remove();
 
-      // Cleanup FCM token refresh listener
-      unsubscribeTokenRefresh?.();
-
-      // Cleanup notification listeners
-      notificationCleanup?.();
     };
   }, []);
 
-  // 🔥 REQUEST NOTIFICATION PERMISSION
-  const requestNotificationPermission = async () => {
-    try {
-      const { status } = await checkNotifications();
+  useEffect(() => {
+    if (!userId) return;
 
-      if (status !== RESULTS.GRANTED) {
-        await requestNotifications(['alert', 'sound', 'badge']);
+    let cancelled = false;
+    let notificationCleanup: (() => void) | undefined;
+    let unsubscribeTokenRefresh: (() => void) | undefined;
+
+    const setupNotifications = async () => {
+      unsubscribeTokenRefresh = await requestUserPermission();
+      if (cancelled) {
+        unsubscribeTokenRefresh?.();
+        return;
       }
-    } catch (error) {
-      console.log('Notification permission error', error);
-    }
-  };
+
+      notificationCleanup = await notificationListener();
+    };
+
+    setupNotifications();
+
+    return () => {
+      cancelled = true;
+      notificationCleanup?.();
+      unsubscribeTokenRefresh?.();
+    };
+  }, [userId]);
 
   // 🔥 CHECK APP PERMISSIONS
   const checkPermissions = async () => {
     try {
-      // ✅ NOTIFICATION
-      await requestNotificationPermission();
-
       if (Platform.OS === 'android') {
         // await request(PERMISSIONS.ANDROID.CAMERA);
 

@@ -1,4 +1,7 @@
 import messaging from '@react-native-firebase/messaging';
+import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import VersionCheck from 'react-native-version-check';
 
 import notifee, {
   AndroidImportance,
@@ -7,23 +10,33 @@ import notifee, {
 } from '@notifee/react-native';
 
 import api from '../../Instance/Instance';
-import { Alert } from 'react-native';
+import { handleDeepLink } from '../utils/handleDeepLink';
+import { setPendingDeepLink } from '../utils/deepLinkStore';
+
+const INSTALLATION_ID_KEY = 'notificationInstallationId';
+
+const getInstallationId = async () => {
+  const existing = await AsyncStorage.getItem(INSTALLATION_ID_KEY);
+  if (existing) return existing;
+
+  const generated = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  await AsyncStorage.setItem(INSTALLATION_ID_KEY, generated);
+  return generated;
+};
 
 // 🔥 SAVE FCM TOKEN TO BACKEND
 const saveFcmToken = async (token: string) => {
   try {
     const response = await api.post('/auth/fcm-token', {
       fcm_token: token,
+      platform: Platform.OS,
+      app_version: VersionCheck.getCurrentVersion(),
+      installation_id: await getInstallationId(),
     });
-
-    console.log('FCM TOKEN SAVED => ', JSON.stringify(response.data, null, 2));
 
     return response.data;
   } catch (error: any) {
-    console.log(
-      'SAVE TOKEN ERROR => ',
-      JSON.stringify(error?.response?.data || error.message, null, 2),
-    );
+    console.log('SAVE TOKEN ERROR => ', error?.response?.status || error.message);
   }
 };
 
@@ -51,9 +64,6 @@ export const getFcmToken = async () => {
     // 🔥 GENERATE NEW TOKEN
     const token = await messaging().getToken();
 
-    console.log('FCM TOKEN => ', token);
-    // Alert.alert('FCM TOKEN', token);
-
     await saveFcmToken(token);
 
     return token;
@@ -65,8 +75,6 @@ export const getFcmToken = async () => {
 // 🔥 TOKEN REFRESH LISTENER
 export const tokenRefreshListener = () => {
   return messaging().onTokenRefresh(async token => {
-    console.log('NEW FCM TOKEN => ', token);
-
     await saveFcmToken(token);
   });
 };
@@ -176,19 +184,21 @@ export const notificationListener = async () => {
   });
 
   const unsubscribeOpen = messaging().onNotificationOpenedApp(remoteMessage => {
-    console.log('Opened from background => ', remoteMessage);
+    handleNotificationPress(remoteMessage);
   });
 
   const remoteMessage = await messaging().getInitialNotification();
 
   if (remoteMessage) {
-    console.log('Opened from quit state => ', remoteMessage);
+    handleNotificationPress(remoteMessage);
   }
 
   const unsubscribeNotifee = notifee.onForegroundEvent(({ type, detail }) => {
     switch (type) {
       case EventType.PRESS:
-        console.log('Notification Pressed => ', detail.notification);
+        handleNotificationPress({
+          data: detail.notification?.data,
+        });
         break;
     }
   });
@@ -198,4 +208,12 @@ export const notificationListener = async () => {
     unsubscribeOpen();
     unsubscribeNotifee();
   };
+};
+
+const handleNotificationPress = (remoteMessage: any) => {
+  const deepLink = remoteMessage?.data?.deep_link;
+  if (!deepLink) return;
+
+  setPendingDeepLink(deepLink);
+  handleDeepLink(deepLink);
 };
