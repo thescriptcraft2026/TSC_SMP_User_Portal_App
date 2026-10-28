@@ -25,6 +25,7 @@ import {
 } from './src/services/notificationService';
 import { setPendingDeepLink } from './src/utils/deepLinkStore';
 import { handleDeepLink } from './src/utils/handleDeepLink';
+import { configureGoogleSignIn } from './src/services/googleAuthService';
 
 import UpdateModal from './src/components/Modals/UpdateModal';
 import { checkAppUpdate, redirectToStore } from './src/services/updateService';
@@ -46,6 +47,7 @@ const AppWrapper = () => {
   useEffect(() => {
     const init = async () => {
       try {
+        configureGoogleSignIn();
         console.log('====================');
         console.log('APP INIT START');
         console.log('====================');

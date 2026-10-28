@@ -7,6 +7,7 @@ import {
   Platform,
   ImageBackground,
   StatusBar,
+  ActivityIndicator,
 } from 'react-native';
 
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -20,6 +21,7 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 import { useDispatch } from 'react-redux';
 import {
   getUserThunk,
+  googleLogin,
   login,
   sendLoginPhoneOtp,
   updateProfile,
@@ -35,6 +37,12 @@ import {
   getPendingDeepLink,
 } from '../../utils/deepLinkStore';
 import { handleDeepLink } from '../../utils/handleDeepLink';
+import Google from '../../assets/SVG/Google';
+import {
+  signInWithGoogle,
+  statusCodes,
+} from '../../services/googleAuthService';
+import { getFcmToken } from '../../services/notificationService';
 
 import { Dimensions } from 'react-native';
 import { scaleSize, verticalScaleSize } from '../../utils/responsive';
@@ -51,6 +59,7 @@ const Login = ({ navigation, route }: any) => {
   const dispatch = useDispatch<any>();
   const { show } = useToast();
   const [loginLoading, setLoginLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [showMobileVerification, setShowMobileVerification] = useState(false);
   const [pendingRouteName, setPendingRouteName] = useState<string | null>(null);
   const [pendingUserId, setPendingUserId] = useState<number | null>(null);
@@ -304,6 +313,121 @@ const Login = ({ navigation, route }: any) => {
     });
   };
 
+  const handleGoogleLogin = async () => {
+    if (loginLoading || googleLoading) return;
+
+    try {
+      setGoogleLoading(true);
+
+      const idToken = await signInWithGoogle();
+      console.log('Google Sign-In returned idToken, calling backend...');
+
+      const res = await dispatch(
+        googleLogin({ id_token: idToken }),
+      ).unwrap();
+
+      const accessToken = res?.data?.accessToken || res?.accessToken;
+      const refreshToken = res?.data?.refreshToken || res?.refreshToken;
+
+      if (!accessToken || !refreshToken) {
+        throw new Error(res?.message || 'Google authentication failed.');
+      }
+
+      await AsyncStorage.setItem('userAccessToken', accessToken);
+      await AsyncStorage.setItem('userRefreshToken', refreshToken);
+      api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+
+      getFcmToken().catch(err =>
+        console.log('Error registering FCM token on Google login:', err),
+      );
+
+      const profileRes = await dispatch(getUserThunk()).unwrap();
+      const user = profileRes?.data || profileRes;
+
+      const hasPrimary = user?.added_primary_roles === true;
+      const hasSecondary = user?.added_secondary_roles === true;
+      const hasUserName = !!user?.user_name;
+      const hasBio = !!user?.bio?.trim();
+
+      if (!isPhoneVerified(user)) {
+        requestMobileVerification('App', user);
+        return;
+      }
+
+      if (!hasUserName) {
+        resetRoot('Auth', { screen: 'AddUserName' });
+        return;
+      }
+
+      if (!hasPrimary) {
+        resetRoot('Auth', { screen: 'RoleSetup' });
+        return;
+      }
+
+      if (!hasSecondary) {
+        resetRoot('Auth', {
+          screen: 'RoleSetup',
+          params: { step: 3 },
+        });
+        return;
+      }
+
+      if (!hasBio) {
+        resetRoot('Auth', { screen: 'BioSetup' });
+        return;
+      }
+
+      resetRoot('App', {
+        screen: 'BottomTab',
+        params: { screen: 'Feed' },
+      });
+
+      const pendingUrl = getPendingDeepLink();
+      if (pendingUrl) {
+        clearPendingDeepLink();
+        setTimeout(() => {
+          handleDeepLink(pendingUrl);
+        }, 400);
+      }
+
+      show({
+        type: 'success',
+        title: 'Login Successful',
+      });
+    } catch (error: any) {
+      console.log('Google login error:', error);
+
+      if (error?.code === statusCodes.SIGN_IN_CANCELLED) {
+        return;
+      }
+
+      if (error?.code === statusCodes.IN_PROGRESS) {
+        return;
+      }
+
+      if (error?.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        show({
+          type: 'error',
+          title: 'Google Play Services is not available or outdated.',
+        });
+        return;
+      }
+
+      const errorMessage =
+        error?.message ||
+        error?.data?.message ||
+        error?.payload?.message ||
+        'Google Login failed';
+
+      show({
+        type: 'error',
+        title: errorMessage,
+      });
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
   const onSubmit = async (data: any) => {
     if (loginLoading) return;
 
@@ -484,6 +608,35 @@ const Login = ({ navigation, route }: any) => {
               disabled={loginLoading}
               loading={loginLoading}
             />
+
+            {/* DIVIDER */}
+            <View style={styles.orContainer}>
+              <View style={styles.line} />
+              <Text style={[styles.orText, { color: subText }]}>
+                or continue with
+              </Text>
+              <View style={styles.line} />
+            </View>
+
+            {/* GOOGLE SIGN IN BUTTON */}
+            <TouchableOpacity
+              style={[
+                styles.googleBtn,
+                googleLoading && { opacity: 0.7 },
+              ]}
+              onPress={handleGoogleLogin}
+              disabled={loginLoading || googleLoading}
+              activeOpacity={0.8}
+            >
+              {googleLoading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <>
+                  <Google size={20} />
+                  <Text style={styles.googleBtnText}>Continue with Google</Text>
+                </>
+              )}
+            </TouchableOpacity>
           </View>
         </View>
       </KeyboardAwareScrollView>
@@ -651,7 +804,8 @@ const styles = StyleSheet.create({
   orContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 30,
+    marginTop: 22,
+    marginBottom: 16,
   },
 
   line: {
@@ -661,25 +815,29 @@ const styles = StyleSheet.create({
   },
 
   orText: {
-    marginHorizontal: 40,
+    marginHorizontal: 16,
     fontSize: 12,
     fontFamily: Fonts.Medium,
-  },
-
-  socialRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 10,
+    color: '#aaa',
   },
 
   googleBtn: {
-    flex: 1,
-    borderWidth: 0.5,
-    borderColor: '#ddd',
-    padding: 12,
-    borderRadius: 25,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.22)',
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 28,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    gap: 10,
+    marginTop: 4,
+  },
+
+  googleBtnText: {
+    color: '#fff',
+    fontSize: 15,
+    fontFamily: Fonts.SemiBold,
   },
 });
