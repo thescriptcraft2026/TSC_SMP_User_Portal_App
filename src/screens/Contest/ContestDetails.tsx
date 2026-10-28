@@ -50,6 +50,7 @@ import Ionicons from '@react-native-vector-icons/ionicons';
 import RenderHTML from 'react-native-render-html';
 import { useShare } from '../../hooks/useShare';
 import ContestDetailsSkeleton from './components/ContestDetailsSkeleton';
+import NotFoundScreen from '../NotFoundScreen';
 import PrizeMoneyCard from './components/PrizeMoneyCard';
 import ContestWinnerPodium from '../../components/ContestWinnerPodium/ContestWinnerPodium';
 import {
@@ -62,7 +63,7 @@ const ContestDetails = () => {
   const navigation = useNavigation<any>();
   const isDark = true;
   const route = useRoute<any>();
-  const { contestId } = route.params || {};
+  const contestId = route.params?.contestId || route.params?.id;
   const insets = useSafeAreaInsets();
   const dispatch = useDispatch<any>();
   const { show } = useToast();
@@ -70,7 +71,7 @@ const ContestDetails = () => {
   const { width } = useWindowDimensions();
   const [imageError, setImageError] = useState(false);
 
-  const { selectedContest, bookmarkedIds, loading } = useSelector(
+  const { selectedContest, bookmarkedIds, loading, error: contestError } = useSelector(
     (state: any) => state.contest,
   );
 
@@ -239,7 +240,33 @@ const ContestDetails = () => {
   const showViewSubmissions =
     selectedContest?.publish_winners || contestStatus === 'completed';
 
-  if (loading || !selectedContest) {
+  if (loading) {
+    return <ContestDetailsSkeleton />;
+  }
+
+  if (!selectedContest) {
+    if (!contestId) {
+      return (
+        <NotFoundScreen
+          title="Invalid Contest"
+          description="Contest ID is missing or invalid."
+          showButton={true}
+        />
+      );
+    }
+    if (contestError) {
+      return (
+        <NotFoundScreen
+          title="Contest Not Found"
+          description={
+            typeof contestError === 'string'
+              ? contestError
+              : contestError?.message || 'Unable to load contest details.'
+          }
+          showButton={true}
+        />
+      );
+    }
     return <ContestDetailsSkeleton />;
   }
 

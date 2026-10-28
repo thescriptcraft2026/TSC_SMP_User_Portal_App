@@ -80,7 +80,7 @@ const BookDetails = () => {
   const insets = useSafeAreaInsets();
 
   const route = useRoute<any>();
-  const { bookId } = route.params || {};
+  const bookId = route.params?.bookId || route.params?.id;
 
   const [ratingVisible, setRatingVisible] = useState(false);
   const [reportVisible, setReportVisible] = useState(false);

@@ -91,7 +91,7 @@ const SinglePostDetails = () => {
   const flashListRef = useRef<any>(null);
   const dispatch = useDispatch<any>();
   const { show } = useToast();
-  const { postId } = route.params || {};
+  const postId = route.params?.postId || route.params?.id;
 
   const isDark = true;
 

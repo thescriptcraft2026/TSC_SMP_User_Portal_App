@@ -28,6 +28,7 @@ import {
   verifyRegistrationPhoneOtpApi,
 } from '../../services/authApi';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { clearFcmToken } from '../../services/notificationService';
 
 interface AuthState {
   user: any;
@@ -387,6 +388,12 @@ export const logoutUser = createAsyncThunk(
 
       if (refreshToken) {
         await logoutApi(refreshToken);
+      }
+
+      try {
+        await clearFcmToken();
+      } catch (fcmErr) {
+        console.log('Error clearing FCM token on logout:', fcmErr);
       }
 
       await AsyncStorage.multiRemove(['userAccessToken', 'userRefreshToken']);

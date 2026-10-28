@@ -63,7 +63,7 @@ const CARD_WIDTH = 180;
 const SingleMovieDetails = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const { id } = route.params || {};
+  const id = route.params?.id || route.params?.movieId;
   const insets = useSafeAreaInsets();
   const dispatch = useDispatch<any>();
   const { show } = useToast();

@@ -5,29 +5,20 @@ export const handleDeepLink = (url: string) => {
 
   console.log('Deep Link URL:', url);
 
-  let route = '';
+  let route = url.trim();
 
-  // ==========================
-  // CUSTOM SCHEME
-  // ==========================
-  if (url.startsWith('tsc://')) {
-    route = url.replace('tsc://', '');
-  }
+  // Strip query strings and hash anchors before parsing route path
+  route = route.split('?')[0].split('#')[0];
 
-  // ==========================
-  // PRODUCTION DOMAIN
-  // ==========================
-  else if (url.startsWith('https://thescriptcraft.com/')) {
-    route = url.replace('https://thescriptcraft.com/', '');
-  } else if (url.startsWith('https://www.thescriptcraft.com/')) {
-    route = url.replace('https://www.thescriptcraft.com/', '');
-  }
+  // Normalize: strip custom scheme, full HTTP/HTTPS domains, or leading slashes
+  route = route
+    .replace(/^tsc:\/\//i, '')
+    .replace(/^https?:\/\/(www\.)?thescriptcraft\.com\//i, '')
+    .replace(/^https?:\/\/betatscapi\.thescriptcraft\.com\//i, '')
+    .replace(/^\/+/, '');
 
-  // ==========================
-  // UNKNOWN URL
-  // ==========================
-  else {
-    console.log('Unsupported Deep Link:', url);
+  if (!route) {
+    console.log('Empty route after normalizing:', url);
     return;
   }
 
@@ -49,16 +40,14 @@ export const handleDeepLink = (url: string) => {
   // Example:
   // https://thescriptcraft.com/aman/status/9300c958-...
   // =====================================================
-  if (
-    parts.length >= 3 &&
-    parts[1].toLowerCase() === 'status'
-  ) {
+  if (parts.length >= 3 && parts[1].toLowerCase() === 'status') {
     const postId = decodeURIComponent(parts[2]);
 
     console.log('Opening Website Post:', postId);
 
     navigate('SinglePostDetailes', {
       postId,
+      id: postId,
     });
 
     return;
@@ -72,13 +61,43 @@ export const handleDeepLink = (url: string) => {
 
   switch (type) {
     // ==========================
+    // NOTIFICATION / ANNOUNCEMENTS
+    // ==========================
+    case 'notification':
+    case 'notifications':
+    case 'announcement':
+    case 'announcements':
+      navigate('Notification');
+      break;
+
+    // ==========================
+    // CHAT / MESSAGING
+    // ==========================
+    case 'chat':
+    case 'chats':
+    case 'messaging':
+      if (value) {
+        navigate('ChatRoom', {
+          chatId: value,
+        });
+      } else {
+        navigate('Chats');
+      }
+      break;
+
+    // ==========================
     // BOOK
     // ==========================
     case 'book':
     case 'books':
-      navigate('BookDetails', {
-        bookId: value,
-      });
+      if (value) {
+        navigate('BookDetails', {
+          bookId: value,
+          id: value,
+        });
+      } else {
+        navigate('AllBooks');
+      }
       break;
 
     // ==========================
@@ -86,9 +105,14 @@ export const handleDeepLink = (url: string) => {
     // ==========================
     case 'movie':
     case 'movies':
-      navigate('SingleMovieDetails', {
-        id: value,
-      });
+      if (value) {
+        navigate('SingleMovieDetails', {
+          id: value,
+          movieId: value,
+        });
+      } else {
+        navigate('AllMovies');
+      }
       break;
 
     // ==========================
@@ -96,11 +120,17 @@ export const handleDeepLink = (url: string) => {
     // ==========================
     case 'post':
     case 'posts':
-      console.log('Opening Post:', value);
-
-      navigate('SinglePostDetailes', {
-        postId: value,
-      });
+      if (value) {
+        console.log('Opening Post:', value);
+        navigate('SinglePostDetailes', {
+          postId: value,
+          id: value,
+        });
+      } else {
+        navigate('BottomTab', {
+          screen: 'Feed',
+        });
+      }
       break;
 
     // ==========================
@@ -108,9 +138,14 @@ export const handleDeepLink = (url: string) => {
     // ==========================
     case 'contest':
     case 'contests':
-      navigate('ContestDetails', {
-        id: value,
-      });
+      if (value) {
+        navigate('ContestDetails', {
+          contestId: value,
+          id: value,
+        });
+      } else {
+        navigate('AllContest');
+      }
       break;
 
     // ==========================
@@ -118,28 +153,70 @@ export const handleDeepLink = (url: string) => {
     // ==========================
     case 'synopsis':
     case 'synopses':
-      navigate('SynopsisDetails', {
-        synopsisId: value,
-      });
+    case 'synopsys':
+      if (value) {
+        navigate('SynopsisDetails', {
+          synopsisId: value,
+          id: value,
+        });
+      } else {
+        navigate('AllSynopsis');
+      }
       break;
 
     // ==========================
-    // VISION X
+    // VISION X / CREATORS ZONE
     // ==========================
     case 'vision':
     case 'visionx':
-      navigate('VisionXDetails', {
-        visionxId: value,
-      });
+    case 'creators-zone':
+      if (value) {
+        navigate('VisionXDetails', {
+          visionxId: value,
+          id: value,
+        });
+      } else {
+        navigate('AllVisionX');
+      }
       break;
 
     // ==========================
-    // OPPORTUNITY
+    // OPPORTUNITY / JOBS
     // ==========================
     case 'opportunity':
     case 'opportunities':
-      navigate('SingleOpportunityDetails', {
-        id: value,
+    case 'job':
+    case 'jobs':
+      if (value) {
+        navigate('SingleOpportunityDetails', {
+          opp_id: value,
+          id: value,
+          opportunity_id: value,
+        });
+      } else {
+        navigate('AllOpportunity');
+      }
+      break;
+
+    // ==========================
+    // FEED / HOME TABS
+    // ==========================
+    case 'feed':
+      navigate('BottomTab', {
+        screen: 'Feed',
+      });
+      break;
+
+    case 'home':
+      navigate('BottomTab', {
+        screen: 'Home',
+      });
+      break;
+
+    case 'requests':
+    case 'connections':
+      navigate('BottomTab', {
+        screen: 'Connections',
       });
       break;
 
@@ -154,15 +231,22 @@ export const handleDeepLink = (url: string) => {
 
       navigate(
         'Profile',
-        isUUID
-          ? { id: value }
-          : { username: value },
+        isUUID ? { id: value } : { username: value },
       );
 
       break;
     }
 
-    default:
+    default: {
+      // Single-segment route that didn't match a known keyword is treated as a username profile
+      const staticPages = ['privacy', 'terms', 'about', 'contact', 'help', 'onboarding', 'login', 'signup'];
+      if (parts.length === 1 && parts[0] && !staticPages.includes(type)) {
+        navigate('Profile', {
+          username: parts[0],
+        });
+        break;
+      }
       console.log('Unknown deep link:', route);
+    }
   }
 };

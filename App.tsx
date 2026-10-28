@@ -13,11 +13,13 @@ import { Provider, useSelector } from 'react-redux';
 import analytics from '@react-native-firebase/analytics';
 import {
   request,
+  PERMISSIONS,
 } from 'react-native-permissions';
 import { store } from './src/redux/store';
 import { ToastProvider } from './src/components/Toast/ToastProvider';
 import { SocketProvider } from './src/context/SocketContext';
 import {
+  checkInitialNotification,
   notificationListener,
   requestUserPermission,
 } from './src/services/notificationService';
@@ -89,6 +91,18 @@ const AppWrapper = () => {
 
 
 
+    // 🔔 Notification listeners & cold-start check
+    let notificationCleanup: (() => void) | undefined;
+    const initNotifications = async () => {
+      try {
+        await checkInitialNotification();
+        notificationCleanup = await notificationListener();
+      } catch (notifErr) {
+        console.log('INIT NOTIFICATIONS ERROR =>', notifErr);
+      }
+    };
+    initNotifications();
+
     const subscription = Linking.addEventListener('url', ({ url }) => {
       handleDeepLink(url);
     });
@@ -101,7 +115,7 @@ const AppWrapper = () => {
 
     return () => {
       subscription.remove();
-
+      notificationCleanup?.();
     };
   }, []);
 
@@ -109,7 +123,6 @@ const AppWrapper = () => {
     if (!userId) return;
 
     let cancelled = false;
-    let notificationCleanup: (() => void) | undefined;
     let unsubscribeTokenRefresh: (() => void) | undefined;
 
     const setupNotifications = async () => {
@@ -118,15 +131,12 @@ const AppWrapper = () => {
         unsubscribeTokenRefresh?.();
         return;
       }
-
-      notificationCleanup = await notificationListener();
     };
 
     setupNotifications();
 
     return () => {
       cancelled = true;
-      notificationCleanup?.();
       unsubscribeTokenRefresh?.();
     };
   }, [userId]);

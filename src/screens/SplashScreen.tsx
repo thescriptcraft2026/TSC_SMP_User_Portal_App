@@ -74,12 +74,27 @@ const SplashScreen = ({ navigation }: any) => {
 
         if (url) {
           clearPendingDeepLink();
-
-          setTimeout(() => {
-            handleDeepLink(url);
-          }, 300);
+          handleDeepLink(url);
         }
-      }, 500);
+      }, 350);
+    };
+
+    const startTime = Date.now();
+    const minSplashDuration = 1500;
+
+    const ensureMinDuration = async () => {
+      const elapsed = Date.now() - startTime;
+      if (elapsed < minSplashDuration) {
+        await new Promise(resolve => setTimeout(resolve, minSplashDuration - elapsed));
+      }
+    };
+
+    let hasNavigated = false;
+    const safeReset = async (name: string, params?: any) => {
+      if (hasNavigated) return;
+      hasNavigated = true;
+      await ensureMinDuration();
+      reset(name, params);
     };
 
     const init = async () => {
@@ -112,7 +127,7 @@ const SplashScreen = ({ navigation }: any) => {
               'userRefreshToken',
             ]);
 
-            reset('Auth');
+            await safeReset('Auth');
             return;
           }
 
@@ -129,7 +144,7 @@ const SplashScreen = ({ navigation }: any) => {
               'userRefreshToken',
             ]);
 
-            reset('Auth');
+            await safeReset('Auth');
             return;
           }
         }
@@ -146,9 +161,28 @@ const SplashScreen = ({ navigation }: any) => {
           const hasSecondary = user?.added_secondary_roles === true;
           const hasUserName = user?.user_name;
           const hasBio = !!user?.bio?.trim();
+          const isPhoneVerified =
+            user?.phone_verified === true ||
+            user?.phone_verified === 1 ||
+            user?.phone_verified === '1' ||
+            String(user?.phone_verified).toLowerCase() === 'true';
+
+          // A persisted access token must not bypass mobile verification.
+          // Login performs this check for new sessions; repeat it here when
+          // restoring a session after the app has been closed.
+          if (!isPhoneVerified) {
+            await safeReset('Auth', {
+              screen: 'Login',
+              params: {
+                requireMobileVerification: true,
+                verificationUser: user,
+              },
+            });
+            return;
+          }
 
           if (!hasUserName) {
-            reset('Auth', {
+            await safeReset('Auth', {
               screen: 'AddUserName',
             });
 
@@ -157,14 +191,14 @@ const SplashScreen = ({ navigation }: any) => {
 
           // Roles not completed
           if (!hasPrimary) {
-            reset('Auth', {
+            await safeReset('Auth', {
               screen: 'RoleSetup',
             });
             return;
           }
 
           if (!hasSecondary) {
-            reset('Auth', {
+            await safeReset('Auth', {
               screen: 'RoleSetup',
               params: { step: 3 },
             });
@@ -172,14 +206,14 @@ const SplashScreen = ({ navigation }: any) => {
           }
 
           if (!hasBio) {
-            reset('Auth', {
+            await safeReset('Auth', {
               screen: 'BioSetup',
             });
             return;
           }
 
           // Profile setup completed
-          reset('App');
+          await safeReset('App');
           openPendingDeepLink();
           return;
         }
@@ -191,9 +225,9 @@ const SplashScreen = ({ navigation }: any) => {
 
         if (!token) {
           if (hasSeenOnboarding !== 'true') {
-            reset('onBoarding');
+            await safeReset('onBoarding');
           } else {
-            reset('Auth');
+            await safeReset('Auth');
           }
 
           return;
@@ -212,7 +246,7 @@ const SplashScreen = ({ navigation }: any) => {
           'userRefreshToken',
         ]);
 
-        reset('Auth');
+        await safeReset('Auth');
       } catch (error) {
         console.log('Error checking onboarding:', error);
 
@@ -221,15 +255,22 @@ const SplashScreen = ({ navigation }: any) => {
           'userRefreshToken',
         ]);
 
-        reset('Auth');
+        await safeReset('Auth');
       }
     };
-    // ✅ HOLD SPLASH FOR 3 SEC
-    const timer = setTimeout(() => {
-      init();
-    }, 3000);
 
-    return () => clearTimeout(timer);
+    // Start init immediately
+    init();
+
+    // Safety watchdog: ensure splash never hangs past 7 seconds
+    const watchdogTimer = setTimeout(() => {
+      if (!hasNavigated) {
+        console.log('Splash watchdog triggered → safely navigating to Auth');
+        safeReset('Auth');
+      }
+    }, 7000);
+
+    return () => clearTimeout(watchdogTimer);
   }, []);
 
   return (

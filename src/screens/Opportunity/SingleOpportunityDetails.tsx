@@ -40,6 +40,7 @@ import { formatDate } from '../../utils/date';
 
 import { useToast } from '../../components/Toast/ToastProvider';
 import OpportunityDetailsSkeleton from '../../components/skeleton/OpportunityDetailsSkeleton';
+import NotFoundScreen from '../NotFoundScreen';
 import { createReport, getReports } from '../../redux/slices/reportSlice';
 import ReportModal from '../../components/Modals/ReportModal';
 import TagChip from '../../components/Tags/TagChip';
@@ -61,7 +62,10 @@ import Eye from '../../assets/SVG/Eye';
 const SingleOpportunityDetails = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const { opp_id } = route.params || {};
+  const opp_id =
+    route.params?.opp_id ||
+    route.params?.id ||
+    route.params?.opportunity_id;
   const insets = useSafeAreaInsets();
   const dispatch = useDispatch<any>();
   const { show } = useToast();
@@ -330,8 +334,18 @@ const SingleOpportunityDetails = () => {
   };
 
   // 👇 ADD HERE
-  if (detailsLoading || !selectedOpportunity) {
+  if (detailsLoading) {
     return <OpportunityDetailsSkeleton />;
+  }
+
+  if (!selectedOpportunity) {
+    return (
+      <NotFoundScreen
+        title="Opportunity Not Found"
+        description="Unable to load opportunity details."
+        showButton={true}
+      />
+    );
   }
 
   return (

@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { navigationRef } from './navigationRef';
+import { navigationRef, onNavigationReady } from './navigationRef';
 import BottomTabs from './src/navigation/BottomTab';
 import SplashScreen from './src/screens/SplashScreen';
 import Login from './src/screens/Auth/Login';
@@ -68,6 +68,7 @@ const linking = {
   prefixes: [
     'https://www.thescriptcraft.com',
     'https://thescriptcraft.com',
+    'tsc://',
   ],
 
   config: {
@@ -76,21 +77,36 @@ const linking = {
 
       onBoarding: 'onboarding',
 
+      Auth: {
+        screens: {
+          Login: 'login',
+          Signup: 'signup',
+        },
+      },
+
       App: {
         screens: {
           BottomTab: {
             screens: {
               Home: 'home',
+              Feed: 'feed',
+              Connections: 'connections',
             },
           },
           SingleMovieDetails: 'movie/:id',
           SinglePostDetailes: 'post/:id',
-          ContestDetails: 'contest/:id',
+          ContestDetails: 'contest/:contestId',
           Profile: 'profile/:id',
-          BookDetails: 'book/:id',
-          SynopsisDetails: 'synopsis/:id',
-          VisionXDetails: 'visionx/:id',
-          SingleOpportunityDetails: 'opportunity/:id',
+          BookDetails: 'book/:bookId',
+          SynopsisDetails: 'synopsis/:synopsisId',
+          VisionXDetails: 'visionx/:visionxId',
+          SingleOpportunityDetails: 'opportunity/:opp_id',
+          Notification: 'notification',
+          AllContest: 'contests',
+          AllOpportunity: 'opportunities',
+          AllBooks: 'books',
+          AllSynopsis: 'synopses',
+          AllVisionX: 'creators-zone',
         },
       },
     },
@@ -210,7 +226,11 @@ const AppWithDrawer = () => {
 
 const Navigator = () => {
   return (
-    <NavigationContainer ref={navigationRef} linking={linking}>
+    <NavigationContainer
+      ref={navigationRef}
+      linking={linking}
+      onReady={onNavigationReady}
+    >
       <Stack.Navigator
         initialRouteName="Splash"
         screenOptions={{ headerShown: false }}

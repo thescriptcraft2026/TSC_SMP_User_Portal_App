@@ -1,12 +1,10 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
-  createNavigationContainerRef,
   CommonActions,
 } from '@react-navigation/native';
 import Config from 'react-native-config';
-
-export const navigationRef = createNavigationContainerRef();
+import { navigationRef } from '../navigationRef';
 
 export const DEFAULT_API_BASE_URL = 'https://betatscapi.thescriptcraft.com/v1/user';
 export const DEFAULT_SOCKET_URL = 'https://betatscapi.thescriptcraft.com';

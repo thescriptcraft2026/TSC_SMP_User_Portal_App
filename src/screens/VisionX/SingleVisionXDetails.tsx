@@ -76,7 +76,7 @@ const SingleVisionXDetails = () => {
   const dispatch = useDispatch<any>();
   const { show } = useToast();
   const route = useRoute<any>();
-  const { visionxId } = route.params || {};
+  const visionxId = route.params?.visionxId || route.params?.id;
 
   const [ratingVisible, setRatingVisible] = useState(false);
   const [reportVisible, setReportVisible] = useState(false);

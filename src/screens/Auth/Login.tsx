@@ -1,4 +1,4 @@
-import React, {  useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -30,6 +30,11 @@ import { useToast } from '../../components/Toast/ToastProvider';
 import api from '../../../Instance/Instance';
 import { CommonActions } from '@react-navigation/native';
 import { reset as resetRoot } from '../../../navigationRef';
+import {
+  clearPendingDeepLink,
+  getPendingDeepLink,
+} from '../../utils/deepLinkStore';
+import { handleDeepLink } from '../../utils/handleDeepLink';
 
 import { Dimensions } from 'react-native';
 import { scaleSize, verticalScaleSize } from '../../utils/responsive';
@@ -42,7 +47,7 @@ const guidelineBaseHeight = 812;
 export const verticalScale = (size: number) =>
   (height / guidelineBaseHeight) * size;
 
-const Login = ({ navigation }: any) => {
+const Login = ({ navigation, route }: any) => {
   const dispatch = useDispatch<any>();
   const { show } = useToast();
   const [loginLoading, setLoginLoading] = useState(false);
@@ -104,6 +109,25 @@ const Login = ({ navigation }: any) => {
     };
   };
 
+  useEffect(() => {
+    const params = route?.params;
+    if (!params?.requireMobileVerification) return;
+
+    const user = params.verificationUser || {};
+    const { phone, countryCode } = extractPhoneDetails(user);
+
+    setPendingRouteName('App');
+    setPendingUserId(getUserId(user));
+    setPendingPhone(phone);
+    setPendingCountryCode(countryCode);
+    setShowMobileVerification(true);
+
+    navigation.setParams({
+      requireMobileVerification: undefined,
+      verificationUser: undefined,
+    });
+  }, [navigation, route?.params]);
+
   const requestMobileVerification = (routeName: string, user: any) => {
     const { phone, countryCode } = extractPhoneDetails(user);
     const userId = getUserId(user);
@@ -114,6 +138,15 @@ const Login = ({ navigation }: any) => {
           screen: 'BottomTab',
           params: { screen: 'Feed' },
         });
+
+        const pendingUrl = getPendingDeepLink();
+        if (pendingUrl) {
+          clearPendingDeepLink();
+          setTimeout(() => {
+            handleDeepLink(pendingUrl);
+          }, 400);
+        }
+
         show({
           type: 'success',
           title: 'Login Successful',
@@ -181,6 +214,15 @@ const Login = ({ navigation }: any) => {
         screen: 'BottomTab',
         params: { screen: 'Feed' },
       });
+
+      const pendingUrl = getPendingDeepLink();
+      if (pendingUrl) {
+        clearPendingDeepLink();
+        setTimeout(() => {
+          handleDeepLink(pendingUrl);
+        }, 400);
+      }
+
       show({
         type: 'success',
         title: 'Login Successful',

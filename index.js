@@ -6,6 +6,8 @@ import { AppRegistry } from 'react-native';
 import messaging from '@react-native-firebase/messaging';
 import notifee, {
   AndroidImportance,
+  AndroidStyle,
+  EventType,
 } from '@notifee/react-native';
 
 import App from './App';
@@ -41,40 +43,53 @@ notifee.onBackgroundEvent(async ({ type, detail }) => {
 
 // 🔥 FIREBASE BACKGROUND MESSAGE
 messaging().setBackgroundMessageHandler(async remoteMessage => {
-  // Notification messages are displayed automatically by Firebase while
-  // backgrounded. Only display data-only messages here to avoid duplicates.
+  console.log('Firebase Background Message Received => ', remoteMessage);
+
+  // Notification messages are displayed automatically by Firebase / APNs while
+  // backgrounded. Only display data-only messages here (common for Admin Dashboard pushes)
+  // to avoid duplicates.
   if (remoteMessage?.notification) return;
-  
+
+  const data = remoteMessage?.data || {};
+  const title = data.title || data.name || 'TheScriptCraft';
+  const body = data.body || data.message || data.description || '';
+  const image = data.image || data.imageUrl || '';
+
   await notifee.createChannel({
-    id: 'default_sound',
+    id: 'default',
     name: 'Default Channel',
     importance: AndroidImportance.HIGH,
+    sound: 'default',
+    vibration: true,
   });
-  
+
   await notifee.displayNotification({
-    title: remoteMessage?.notification?.title || 'Notification',
-    body: remoteMessage?.notification?.body || '',
-    
+    title,
+    body,
+
     android: {
-      channelId: 'default_sound',
+      channelId: 'default',
       importance: AndroidImportance.HIGH,
       sound: 'default',
-      largeIcon: remoteMessage?.data?.image,
-      style: remoteMessage?.data?.image
+      smallIcon: 'ic_notification',
+      largeIcon: image || 'https://tscapi.accurateweb.in/uploads/logo.png',
+      circularLargeIcon: true,
+      color: '#F6A500',
+      style: image
         ? {
-            type: 'BIGPICTURE',
-            picture: remoteMessage.data.image,
+            type: AndroidStyle.BIGPICTURE,
+            picture: image,
           }
         : undefined,
       pressAction: {
         id: 'default',
       },
     },
-    
+
     ios: {
       sound: 'default',
     },
-    data: remoteMessage?.data || {},
+    data,
   });
 });
 

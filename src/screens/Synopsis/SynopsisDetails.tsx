@@ -83,7 +83,7 @@ const SynopsisDetails = () => {
   const [imageLoading, setImageLoading] = useState(true);
   const [expanded, setExpanded] = useState(false);
   const route = useRoute<any>();
-  const { synopsisId } = route.params || {};
+  const synopsisId = route.params?.synopsisId || route.params?.id;
   const dispatch = useDispatch<any>();
   const { show } = useToast();
   const { width } = useWindowDimensions();
