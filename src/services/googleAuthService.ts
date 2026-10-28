@@ -11,10 +11,10 @@ export const GOOGLE_WEB_CLIENT_ID =
   (Config as any)?.GOOGLE_WEB_CLIENT_ID ||
   '141020126721-5a3qdmtk1vu5692t7v649pm7k8fsb67u.apps.googleusercontent.com';
 
-// iOS Client ID from GoogleService-Info.plist
+// iOS Client ID configured in Google Cloud Project 141020126721 (TheScriptCraft iOS)
 export const GOOGLE_IOS_CLIENT_ID =
   (Config as any)?.GOOGLE_IOS_CLIENT_ID ||
-  '929927785688-fv4hgmo5fvv58e40i0gbp3ld4irtjd1l.apps.googleusercontent.com';
+  '141020126721-sj2ulmkduknf8qpeojio7t6h4gtb5lq6.apps.googleusercontent.com';
 
 let isConfigured = false;
 
