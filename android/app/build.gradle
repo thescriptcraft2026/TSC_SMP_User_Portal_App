@@ -85,8 +85,8 @@ android {
         applicationId "com.rnscriptcarft"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 54
-        versionName "1.10.6"
+        versionCode 55
+        versionName "1.10.7"
         resValue "string", "build_config_package", "com.rnscriptcarft"
         externalNativeBuild {
             cmake {
