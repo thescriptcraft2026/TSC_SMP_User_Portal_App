@@ -1,45 +1,43 @@
 {
   "project_info": {
-    "project_number": "610512202636",
-    "project_id": "site-6839d",
-    "storage_bucket": "site-6839d.firebasestorage.app"
+    "project_number": "929927785688",
+    "project_id": "the-script-craft-e8e1d",
+    "storage_bucket": "the-script-craft-e8e1d.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:610512202636:android:c79e8bb74fdb08176884a9",
+        "mobilesdk_app_id": "1:929927785688:android:87f848094a3ebf7b2e3bad",
         "android_client_info": {
           "package_name": "com.rnscriptcarft"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "929927785688-sn7ai7n0q338a46jltjotn7i5hpi4198.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
-          "current_key": "AIzaSyDu41YYr4Ch4eQmx1_XUhle0c9fbuCfZAE"
+          "current_key": "AIzaSyBLrmQudtTs3tPetg_gNuP5RDNvDX69G0g"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:610512202636:android:20c3408dc3a5c7546884a9",
-        "android_client_info": {
-          "package_name": "com.thescriptcraft.tsc"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyDu41YYr4Ch4eQmx1_XUhle0c9fbuCfZAE"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "929927785688-sn7ai7n0q338a46jltjotn7i5hpi4198.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "929927785688-fv4hgmo5fvv58e40i0gbp3ld4irtjd1l.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.scriptcraft.scriptcraft"
+              }
+            }
+          ]
         }
       }
     }

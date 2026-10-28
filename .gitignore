@@ -38,6 +38,7 @@ local.properties
 node_modules/
 npm-debug.log
 yarn-error.log
+.npm-cache/
 
 # fastlane
 #
@@ -75,3 +76,15 @@ yarn-error.log
 
 # android/app/*.jks
 # android/app/*.keystore
+.env
+.env
+.npmrc
+.nvmrc
+.vscode/tasks.json
+.vscode/extensions.json
+.vscode/launch.json
+.vscode/settings.json
+.env
+.env
+.env
+.env

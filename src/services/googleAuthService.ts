@@ -5,11 +5,11 @@ import {
 import { Platform } from 'react-native';
 import Config from 'react-native-config';
 
-// Web Client ID used by the backend to verify Google ID token audience.
-// Matches the Google OAuth Web Client ID configured for beta.thescriptcraft.com
+// Web Client ID from google-services.json (Project 929927785688 / the-script-craft-e8e1d)
+// where com.rnscriptcarft is registered.
 export const GOOGLE_WEB_CLIENT_ID =
   (Config as any)?.GOOGLE_WEB_CLIENT_ID ||
-  '141020126721-5a3qdmtk1vu5692t7v649pm7k8fsb67u.apps.googleusercontent.com';
+  '929927785688-sn7ai7n0q338a46jltjotn7i5hpi4198.apps.googleusercontent.com';
 
 // iOS Client ID from GoogleService-Info.plist
 export const GOOGLE_IOS_CLIENT_ID =
