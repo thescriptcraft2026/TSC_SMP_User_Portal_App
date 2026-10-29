@@ -141,6 +141,19 @@ export const googleLoginApi = async (data: any) => {
   return res.data;
 };
 
+export const appleLoginApi = async (data: {
+  identity_token: string;
+  authorization_code?: string;
+  email?: string | null;
+  full_name?: {
+    given_name?: string | null;
+    family_name?: string | null;
+  } | null;
+}) => {
+  const res = await api.post('/auth/apple-login', data);
+  return res.data;
+};
+
 export const updateProfileApi = async (payload: any) => {
   const res = await api.put('/profile', payload);
   return res.data;

@@ -8,6 +8,7 @@ import {
   getUser,
   getUserNameSuggestionApi,
   googleLoginApi,
+  appleLoginApi,
   loginApi,
   logoutApi,
   resendOtpApi,
@@ -439,6 +440,24 @@ export const googleLogin = createAsyncThunk(
   },
 );
 
+// Login or Signup with Apple
+export const appleLogin = createAsyncThunk(
+  'auth/appleLogin',
+  async (data: any, { rejectWithValue }) => {
+    try {
+      const res = await appleLoginApi(data);
+      return res;
+    } catch (error: any) {
+      return rejectWithValue(
+        error?.response?.data?.errors?.message ||
+          error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          error?.message,
+      );
+    }
+  },
+);
+
 // Bio Update
 export const updateBio = createAsyncThunk(
   'profile/updateBio',
@@ -724,6 +743,25 @@ const authSlice = createSlice({
         console.log('google login success', data);
       })
       .addCase(googleLogin.rejected, (state, action: any) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // 🔥 APPLE LOGIN
+      .addCase(appleLogin.pending, state => {
+        state.loading = true;
+      })
+      .addCase(appleLogin.fulfilled, (state, action: any) => {
+        state.loading = false;
+
+        const data = action.payload?.data;
+
+        state.accessToken = data?.accessToken;
+        state.refreshToken = data?.refreshToken;
+
+        console.log('apple login success', data);
+      })
+      .addCase(appleLogin.rejected, (state, action: any) => {
         state.loading = false;
         state.error = action.payload;
       })

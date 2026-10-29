@@ -13,6 +13,7 @@
     "@chaitrabhairappa/react-native-rich-text-editor": "^3.5.2",
     "@gorhom/bottom-sheet": "^5.2.8",
     "@hookform/resolvers": "^5.2.2",
+    "@invertase/react-native-apple-authentication": "^2.5.1",
     "@notifee/react-native": "^9.1.8",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/blur": "^4.4.1",

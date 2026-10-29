@@ -20,6 +20,7 @@ import FastImage from 'react-native-fast-image';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useDispatch } from 'react-redux';
 import {
+  appleLogin,
   getUserThunk,
   googleLogin,
   login,
@@ -38,10 +39,12 @@ import {
 } from '../../utils/deepLinkStore';
 import { handleDeepLink } from '../../utils/handleDeepLink';
 import Google from '../../assets/SVG/Google';
+import AppleLogo from '../../assets/SVG/AppleLogo';
 import {
   signInWithGoogle,
   statusCodes,
 } from '../../services/googleAuthService';
+import { signInWithApple } from '../../services/appleAuthService';
 import { getFcmToken } from '../../services/notificationService';
 
 import { Dimensions } from 'react-native';
@@ -60,6 +63,7 @@ const Login = ({ navigation, route }: any) => {
   const { show } = useToast();
   const [loginLoading, setLoginLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [appleLoading, setAppleLoading] = useState(false);
   const [showMobileVerification, setShowMobileVerification] = useState(false);
   const [pendingRouteName, setPendingRouteName] = useState<string | null>(null);
   const [pendingUserId, setPendingUserId] = useState<number | null>(null);
@@ -428,6 +432,111 @@ const Login = ({ navigation, route }: any) => {
     }
   };
 
+  const handleAppleLogin = async () => {
+    if (loginLoading || googleLoading || appleLoading) return;
+
+    try {
+      setAppleLoading(true);
+
+      const applePayload = await signInWithApple();
+      console.log('Apple Sign-In returned payload, calling backend...');
+
+      const res = await dispatch(appleLogin(applePayload)).unwrap();
+
+      const accessToken = res?.data?.accessToken || res?.accessToken;
+      const refreshToken = res?.data?.refreshToken || res?.refreshToken;
+
+      if (!accessToken || !refreshToken) {
+        throw new Error(res?.message || 'Apple authentication failed.');
+      }
+
+      await AsyncStorage.setItem('userAccessToken', accessToken);
+      await AsyncStorage.setItem('userRefreshToken', refreshToken);
+      api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+
+      getFcmToken().catch(err =>
+        console.log('Error registering FCM token on Apple login:', err),
+      );
+
+      const profileRes = await dispatch(getUserThunk()).unwrap();
+      const user = profileRes?.data || profileRes;
+
+      const hasPrimary = user?.added_primary_roles === true;
+      const hasSecondary = user?.added_secondary_roles === true;
+      const hasUserName = !!user?.user_name;
+      const hasBio = !!user?.bio?.trim();
+
+      if (!isPhoneVerified(user)) {
+        requestMobileVerification('App', user);
+        return;
+      }
+
+      if (!hasUserName) {
+        resetRoot('Auth', { screen: 'AddUserName' });
+        return;
+      }
+
+      if (!hasPrimary) {
+        resetRoot('Auth', { screen: 'RoleSetup' });
+        return;
+      }
+
+      if (!hasSecondary) {
+        resetRoot('Auth', {
+          screen: 'RoleSetup',
+          params: { step: 3 },
+        });
+        return;
+      }
+
+      if (!hasBio) {
+        resetRoot('Auth', { screen: 'BioSetup' });
+        return;
+      }
+
+      resetRoot('App', {
+        screen: 'BottomTab',
+        params: { screen: 'Feed' },
+      });
+
+      const pendingUrl = getPendingDeepLink();
+      if (pendingUrl) {
+        clearPendingDeepLink();
+        setTimeout(() => {
+          handleDeepLink(pendingUrl);
+        }, 400);
+      }
+
+      show({
+        type: 'success',
+        title: 'Login Successful',
+      });
+    } catch (error: any) {
+      console.log('Apple login error:', error);
+
+      if (
+        error?.code === '1001' ||
+        error?.message?.includes('cancelled') ||
+        error?.message?.includes('canceled')
+      ) {
+        return;
+      }
+
+      const errorMessage =
+        error?.message ||
+        error?.data?.message ||
+        error?.payload?.message ||
+        'Apple Login failed';
+
+      show({
+        type: 'error',
+        title: errorMessage,
+      });
+    } finally {
+      setAppleLoading(false);
+    }
+  };
+
   const onSubmit = async (data: any) => {
     if (loginLoading) return;
 
@@ -618,22 +727,44 @@ const Login = ({ navigation, route }: any) => {
               <View style={styles.line} />
             </View>
 
+            {/* APPLE SIGN IN BUTTON (iOS Only) */}
+            {Platform.OS === 'ios' && (
+              <TouchableOpacity
+                style={[
+                  styles.socialBtn,
+                  appleLoading && { opacity: 0.7 },
+                ]}
+                onPress={handleAppleLogin}
+                disabled={loginLoading || googleLoading || appleLoading}
+                activeOpacity={0.8}
+              >
+                {appleLoading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <>
+                    <AppleLogo size={19} color="#FFFFFF" />
+                    <Text style={styles.socialBtnText}>Continue with Apple</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            )}
+
             {/* GOOGLE SIGN IN BUTTON */}
             <TouchableOpacity
               style={[
-                styles.googleBtn,
+                styles.socialBtn,
                 googleLoading && { opacity: 0.7 },
               ]}
               onPress={handleGoogleLogin}
-              disabled={loginLoading || googleLoading}
+              disabled={loginLoading || googleLoading || appleLoading}
               activeOpacity={0.8}
             >
               {googleLoading ? (
                 <ActivityIndicator size="small" color="#fff" />
               ) : (
                 <>
-                  <Google size={20} />
-                  <Text style={styles.googleBtnText}>Continue with Google</Text>
+                  <Google size={19} />
+                  <Text style={styles.socialBtnText}>Continue with Google</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -668,8 +799,7 @@ const styles = StyleSheet.create({
   },
 
   topSection: {
-    height:
-      Platform.OS === 'ios' ? verticalScaleSize(450) : verticalScaleSize(350),
+    height: verticalScaleSize(220),
     justifyContent: 'flex-start',
     position: 'relative',
   },
@@ -692,41 +822,41 @@ const styles = StyleSheet.create({
 
   logoContainer: {
     position: 'absolute',
-    top: 120,
+    top: Platform.OS === 'ios' ? verticalScaleSize(35) : verticalScaleSize(25),
     left: 0,
     right: 0,
     alignItems: 'center',
   },
 
   logo: {
-    width: 220,
-    height: 220,
+    width: scaleSize(150),
+    height: scaleSize(150),
   },
 
   cameraImage: {
-    width: 180,
-    height: 220,
+    width: 140,
+    height: 170,
     resizeMode: 'contain',
     alignSelf: 'flex-end',
     position: 'absolute',
-    top: -55,
-    left: -40,
+    top: -35,
+    left: -30,
     transform: [
       { rotate: '45deg' },
       // { scale: 1.1 },
       { scaleX: 1 },
     ],
-    opacity: 0.45,
+    opacity: 0.35,
   },
   worldImage: {
-    width: 280,
-    height: 280,
+    width: 200,
+    height: 200,
     resizeMode: 'contain',
     alignSelf: 'flex-end',
     position: 'absolute',
-    bottom: -70,
-    left: -75,
-    opacity: 0.15,
+    bottom: -40,
+    left: -50,
+    opacity: 0.12,
   },
 
   lottie: {
@@ -804,8 +934,8 @@ const styles = StyleSheet.create({
   orContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 22,
-    marginBottom: 16,
+    marginTop: scaleSize(18),
+    marginBottom: scaleSize(12),
   },
 
   line: {
@@ -821,21 +951,21 @@ const styles = StyleSheet.create({
     color: '#aaa',
   },
 
-  googleBtn: {
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.22)',
+  socialBtn: {
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.45)',
     backgroundColor: 'rgba(255,255,255,0.06)',
-    paddingVertical: 14,
+    paddingVertical: 13,
     paddingHorizontal: 16,
     borderRadius: 28,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     gap: 10,
-    marginTop: 4,
+    marginTop: 8,
   },
 
-  googleBtnText: {
+  socialBtnText: {
     color: '#fff',
     fontSize: 15,
     fontFamily: Fonts.SemiBold,
