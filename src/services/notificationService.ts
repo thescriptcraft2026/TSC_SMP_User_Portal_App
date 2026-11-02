@@ -10,7 +10,7 @@ import notifee, {
 } from '@notifee/react-native';
 
 import api from '../../Instance/Instance';
-import { navigationRef } from '../../navigationRef';
+import { navigationRef, navigate } from '../../navigationRef';
 import { handleDeepLink } from '../utils/handleDeepLink';
 import { setPendingDeepLink } from '../utils/deepLinkStore';
 
@@ -291,7 +291,7 @@ export const handleNotificationPress = (payload: any) => {
   const data = payload?.data || payload?.notification?.data || payload || {};
   const deepLink = extractDeepLink(data);
 
-  console.log('Handling Notification Press => deep_link:', deepLink);
+  console.log('Handling Notification Press => deep_link:', deepLink, 'data:', data);
 
   const targetLink = deepLink || 'tsc://notification';
   setPendingDeepLink(targetLink);
@@ -304,6 +304,26 @@ export const handleNotificationPress = (payload: any) => {
       : null;
 
   if (navigationRef.isReady() && currentRouteName && currentRouteName !== 'Splash') {
+    const isChat =
+      data.type === 'chat' ||
+      data.type === 'chat_message' ||
+      Boolean(data.chat_id || data.roomId || data.room_id);
+    const chatId = data.chat_id || data.roomId || data.room_id;
+
+    if (isChat && chatId) {
+      navigate('ChatRoom', {
+        chatId: String(chatId),
+        user: {
+          userId: data.sender_id,
+          id: data.sender_id,
+          name: payload?.notification?.title || data.title || data.name || '',
+          user_name: data.user_name || '',
+          avatar: data.avatar || data.image || null,
+        },
+      });
+      return;
+    }
+
     handleDeepLink(targetLink);
   }
 };

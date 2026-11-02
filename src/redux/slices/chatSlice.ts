@@ -254,24 +254,33 @@ const chatSlice = createSlice({
     },
 
     markMessagesSeen: (state, action) => {
-      const { chat_id, message_ids, message_id } = action.payload;
+      const { chat_id, message_ids, message_id } = action.payload || {};
 
-      // ✅ normalize → always array
-      const ids = Array.isArray(message_ids)
+      // ✅ normalize → always string array
+      const rawIds = Array.isArray(message_ids)
         ? message_ids
         : message_id
           ? [message_id]
           : [];
+      const ids = rawIds.map((id: any) => String(id));
 
       state.messages = state.messages.map((msg: any) => {
         if (String(msg.chat_id) !== String(chat_id)) return msg;
 
-        if (ids.includes(msg.id)) {
+        // If specific message ids were passed, match against msg.id or msg.tempId.
+        // If NO specific ids were passed (chat-wide seen event), mark all messages in this chat as seen!
+        const matchesSpecific =
+          ids.length > 0 &&
+          (ids.includes(String(msg.id)) ||
+            (msg.tempId && ids.includes(String(msg.tempId))));
+        const isChatWideSeen = ids.length === 0;
+
+        if (matchesSpecific || isChatWideSeen) {
           return {
             ...msg,
             is_read: true,
             status: 'seen',
-            seen_at: action.payload.seen_at, // ✅ optional (nice to have)
+            seen_at: action.payload?.seen_at || new Date().toISOString(),
             updatedAt: Date.now(), // force re-render
           };
         }

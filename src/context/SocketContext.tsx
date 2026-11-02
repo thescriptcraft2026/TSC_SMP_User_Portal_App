@@ -263,6 +263,7 @@ export const SocketProvider = ({
     socket.on('stop_typing', onStopTyping);
 
     socket.on('messages_seen', onMessagesSeen);
+    socket.on('seen_message', onMessagesSeen);
 
     socket.on('message_edited', onMessageEdited);
 
@@ -285,6 +286,7 @@ export const SocketProvider = ({
       socket.off('typing', onTyping);
       socket.off('stop_typing', onStopTyping);
       socket.off('messages_seen', onMessagesSeen);
+      socket.off('seen_message', onMessagesSeen);
       socket.off('message_edited', onMessageEdited);
       socket.off('message_deleted', onMessageDeleted);
 
@@ -317,6 +319,7 @@ export const SocketProvider = ({
 
   const markMessageAsRead = (data: any) => {
     socketRef.current?.emit('messages_seen', data);
+    socketRef.current?.emit('seen_message', data);
   };
 
   const value = useMemo(

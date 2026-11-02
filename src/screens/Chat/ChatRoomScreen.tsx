@@ -42,6 +42,7 @@ import {
   editLocalMessage,
   editMessageThunk,
   getMessagesThunk,
+  getAllChatUsersThunk,
 } from '../../redux/slices/chatSlice';
 import api from '../../../Instance/Instance';
 import ChatHeader from './components/ChatHeader';
@@ -82,10 +83,89 @@ const ChatRoomScreen = () => {
   const route = useRoute<any>();
   const { show } = useToast();
 
-  const { chatId, user } = route.params;
-  console.log('userrrrrr', user);
+  const { chatId, user: initialUser } = route.params || {};
+  console.log('userrrrrr', initialUser);
 
-  const { messages } = useSelector((state: any) => state.chat);
+  const { messages, chatUsers } = useSelector((state: any) => state.chat);
+  const { user: authUser } = useSelector((state: any) => state.auth);
+  const myId = authUser?.id;
+
+  const [activeUser, setActiveUser] = useState<any>(initialUser || null);
+
+  useEffect(() => {
+    if (initialUser) {
+      setActiveUser(initialUser);
+      return;
+    }
+
+    if (chatUsers && chatUsers.length > 0) {
+      const found = chatUsers.find(
+        (c: any) =>
+          String(c.id) === String(chatId) ||
+          String(c.chat_id) === String(chatId),
+      );
+      if (found) {
+        setActiveUser({
+          userId: found.user_id,
+          id: found.user_id,
+          name: found.name,
+          avatar: found.avatar,
+          is_online: found.online,
+          isBlocked: found.isBlocked,
+          isDeleted: found.isDeleted,
+          user_name: found.user_name,
+        });
+        return;
+      }
+    }
+
+    dispatch(getAllChatUsersThunk({ page: 1, limit: 100 }));
+  }, [initialUser, chatId, chatUsers]);
+
+  // If activeUser is still missing details, deduce other participant from messages
+  useEffect(() => {
+    if ((!activeUser || !activeUser.userId) && messages?.length > 0 && myId) {
+      const otherMsg =
+        messages.find(
+          (m: any) =>
+            String(m.chat_id) === String(chatId) &&
+            String(m.sender_id) !== String(myId),
+        ) ||
+        messages.find(
+          (m: any) =>
+            String(m.chat_id) === String(chatId) &&
+            m.receiver_id &&
+            String(m.receiver_id) !== String(myId),
+        );
+
+      const otherUserId = otherMsg
+        ? String(otherMsg.sender_id) !== String(myId)
+          ? otherMsg.sender_id
+          : otherMsg.receiver_id
+        : null;
+
+      if (otherUserId) {
+        api
+          .get(`/profile/${otherUserId}`)
+          .then((res: any) => {
+            const u = res?.data?.data || res?.data;
+            if (u) {
+              setActiveUser((prev: any) => ({
+                ...prev,
+                userId: u.id,
+                id: u.id,
+                name: u.name,
+                avatar: u.profile_photo_path || u.avatar,
+                user_name: u.user_name,
+                is_online: u.is_online,
+              }));
+            }
+          })
+          .catch(() => {});
+      }
+    }
+  }, [messages, activeUser, chatId, myId]);
+
   const {
     socket,
     typingUsers,
@@ -95,23 +175,29 @@ const ChatRoomScreen = () => {
     markMessageAsRead,
   } = useSocket();
 
-  const { user: authUser } = useSelector((state: any) => state.auth);
   const { page, hasMore, loading } = useSelector((state: any) => state.chat);
-  const myId = authUser?.id;
 
   const textColor = isDark ? '#fff' : '#000';
 
-  const receiverId = user?.userId ?? user?.id;
+  const receiverId = activeUser?.userId ?? activeUser?.id;
 
   const [isUserOnline, setIsUserOnline] = useState(
-    user?.is_online ?? false,
+    activeUser?.is_online ?? false,
   );
 
   useEffect(() => {
-    // Don't override the API value until socket has emitted something.
-    if (onlineUsers.size === 0) return;
+    if (activeUser?.is_online !== undefined) {
+      setIsUserOnline(activeUser.is_online);
+    }
+  }, [activeUser?.is_online]);
 
-    setIsUserOnline(onlineUsers.has(receiverId));
+  useEffect(() => {
+    // Don't override the API value until socket has emitted something.
+    if (onlineUsers.size === 0 || !receiverId) return;
+
+    setIsUserOnline(
+      onlineUsers.has(Number(receiverId)) || onlineUsers.has(receiverId),
+    );
   }, [onlineUsers, receiverId]);
 
   /* ---------------- LOAD MESSAGES ---------------- */
@@ -136,11 +222,13 @@ const ChatRoomScreen = () => {
 
     const unreadMessages = messages.filter(
       (msg: any) =>
-        msg.chat_id === chatId && msg.sender_id !== myId && !msg.is_read,
+        String(msg.chat_id) === String(chatId) &&
+        String(msg.sender_id) !== String(myId) &&
+        !msg.is_read,
     );
 
     if (unreadMessages.length > 0) {
-      const messageIds = unreadMessages.map((m: any) => m.id);
+      const messageIds = unreadMessages.map((m: any) => m.id).filter(Boolean);
 
       // ✅ optimistic update (instant UI)
       dispatch({
@@ -155,22 +243,25 @@ const ChatRoomScreen = () => {
       markMessageAsRead({
         chat_id: chatId,
         message_ids: messageIds,
+        sender_id: myId,
+        receiver_id: receiverId,
       });
     }
-  }, [messages, chatId, myId]);
+  }, [messages, chatId, myId, receiverId]);
 
   /* ---------------- SEND MESSAGE ---------------- */
 
-  const isChatDisabled = user?.isBlocked || user?.isDeleted;
+  const isChatDisabled = !!(activeUser?.isBlocked || activeUser?.isDeleted);
 
   const handleTyping = useCallback(() => {
-    if (!user?.userId || !chatId) return;
+    const targetUserId = activeUser?.userId || activeUser?.id;
+    if (!targetUserId || !chatId) return;
 
     if (!isTyping) {
       setIsTyping(true);
       emitTyping({
         sender_id: authUser?.id!,
-        receiver_id: user?.userId,
+        receiver_id: targetUserId,
         chat_id: chatId,
       });
     }
@@ -184,14 +275,15 @@ const ChatRoomScreen = () => {
         setIsTyping(false);
         emitStopTyping({
           sender_id: authUser?.id!,
-          receiver_id: user.userId,
+          receiver_id: targetUserId,
           chat_id: chatId,
         });
       }
     }, 2000);
   }, [
     isTyping,
-    user.userId?.id,
+    activeUser?.userId,
+    activeUser?.id,
     chatId,
     authUser?.id,
     emitTyping,
@@ -256,7 +348,10 @@ const ChatRoomScreen = () => {
     );
 
     const formData = new FormData();
-    formData.append('receiver_id', String(user.userId || user.id));
+    const targetReceiverId = activeUser?.userId || activeUser?.id || receiverId;
+    if (targetReceiverId) {
+      formData.append('receiver_id', String(targetReceiverId));
+    }
 
     if (text.trim()) {
       formData.append('message', text);
@@ -328,14 +423,14 @@ const ChatRoomScreen = () => {
       .map((msg: any) => ({
         id: msg.id || msg.tempId,
         text: msg.isDeleted
-          ? msg.sender_id === myId
+          ? String(msg.sender_id) === String(myId)
             ? 'You deleted this message'
             : 'This message was deleted'
           : msg.message || '',
         image: msg.isDeleted ? null : msg.file || msg.image,
-        mine: msg.sender_id === myId,
+        mine: String(msg.sender_id) === String(myId),
         time: msg.createdAt,
-        status: msg.is_read ? 'seen' : msg.status || 'sent',
+        status: (msg.is_read || msg.status === 'seen') ? 'seen' : msg.status || 'sent',
         type: msg.message_type || (msg.file ? 'image' : 'text'),
         is_deleted: msg.isDeleted,
         is_edited: msg.isEdited,
@@ -590,7 +685,7 @@ const ChatRoomScreen = () => {
     );
   }, []);
 
-  console.log('Received ChatId:', user);
+  console.log('Received ChatId:', chatId, 'activeUser:', activeUser);
 
   return (
     <SafeAreaView
@@ -615,8 +710,8 @@ const ChatRoomScreen = () => {
 
         {/* HEADER */}
         <ChatHeader
-          title={user?.name}
-          name={user?.name}
+          title={activeUser?.name || 'Chat'}
+          name={activeUser?.name || ''}
           is_online={isChatDisabled ? false : isUserOnline}
           showBack
           onBack={() => navigation.goBack()}
@@ -624,7 +719,7 @@ const ChatRoomScreen = () => {
             borderBottomWidth: 0.5,
             borderBottomColor: themeColors.border,
           }}
-          uri={isChatDisabled ? defaultProfile : user?.avatar}
+          uri={isChatDisabled ? defaultProfile : activeUser?.avatar}
           showMenu={!isChatDisabled}
           onReport={() => {
             if (isChatDisabled) return;
@@ -635,9 +730,13 @@ const ChatRoomScreen = () => {
           }}
           handleProfile={() => {
             if (isChatDisabled) return;
-            navigation.navigate('Profile', {
-              username: user?.user_name || user?.userId || user?.id,
-            });
+            const targetUsername =
+              activeUser?.user_name || activeUser?.userId || activeUser?.id;
+            if (targetUsername) {
+              navigation.navigate('Profile', {
+                username: targetUsername,
+              });
+            }
           }}
         />
 
@@ -805,9 +904,9 @@ const ChatRoomScreen = () => {
               editable={!isChatDisabled}
               value={text}
               placeholder={
-                user?.isDeleted
+                activeUser?.isDeleted
                   ? 'You cannot message a deleted user'
-                  : user?.isBlocked
+                  : activeUser?.isBlocked
                     ? 'You cannot message this user'
                     : 'Type a message...'
               }
@@ -834,7 +933,7 @@ const ChatRoomScreen = () => {
             <Animated.View
               style={{
                 transform: [{ scale: sendAnim }],
-                opacity: user?.isBlocked ? 0.5 : 1,
+                opacity: activeUser?.isBlocked ? 0.5 : 1,
               }}
             >
               <TouchableOpacity
