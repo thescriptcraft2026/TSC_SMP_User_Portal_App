@@ -20,18 +20,6 @@ const VideoSection = () => {
 
     return (
         <View style={styles.container}>
-            {/* Local Video */}
-            {/* <View style={styles.playerContainer}>
-                <Video
-                    source={require('../../../assets/videos/heroVideo.mp4')}
-                    style={styles.video}
-                    resizeMode="cover"
-                    repeat
-                    paused={false}
-                    muted
-                />
-            </View> */}
-
             {/* YouTube Video */}
             <View style={[styles.playerContainer, { marginTop: 20 }]}>
                 <YoutubePlayer
