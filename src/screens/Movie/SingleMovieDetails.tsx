@@ -1,5 +1,6 @@
 import {
   Dimensions,
+  Image,
   Linking,
   Platform,
   Pressable,
@@ -10,6 +11,7 @@ import {
   Text,
   TouchableOpacity,
   useColorScheme,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
@@ -32,6 +34,7 @@ import { Fonts } from '../../constants/Fonts';
 import MovieRatingModal from './components/modal/MovieRatingModal';
 import PrimaryButton from '../../components/Buttons/PrimaryButton';
 import SingleMovieDetailsSkeleton from './components/SingleMovieDetailsSkeleton';
+import NotFoundScreen from '../NotFoundScreen';
 import LinearGradient from 'react-native-linear-gradient';
 import { useShare } from '../../hooks/useShare';
 import HeartActive from '../../assets/SVG/HeartActive';
@@ -75,6 +78,18 @@ const SingleMovieDetails = () => {
 
 
   const isDark = true;
+
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const bannerHeight = useMemo(
+    () =>
+      Math.round(
+        Math.min(
+          Math.max(windowHeight * 0.40, 280),
+          Platform.OS === 'ios' && Platform.isPad ? 440 : 380,
+        ),
+      ),
+    [windowHeight],
+  );
 
   const [ratingVisible, setRatingVisible] = useState(false);
 
@@ -277,8 +292,18 @@ const SingleMovieDetails = () => {
   }, [dispatch, id]);
 
   // ✅ 👉 PLACE IT HERE (BEFORE RETURN UI)
-  if (detailsLoading || !selectedMovies) {
+  if (detailsLoading) {
     return <SingleMovieDetailsSkeleton />;
+  }
+
+  if (!selectedMovies) {
+    return (
+      <NotFoundScreen
+        title="Details Not Found"
+        description="Unable to load movie or book details. Please try again later."
+        showButton={true}
+      />
+    );
   }
 
   console.log('selected movie', selectedMovies);
@@ -329,36 +354,79 @@ const SingleMovieDetails = () => {
           }}
         >
           {/* IMAGE */}
-          <View style={styles.imageWrapper}>
-            <FastImage
-              style={styles.image}
-              onError={() => setImageError(true)}
+          <View style={[styles.imageWrapper, { height: bannerHeight }]}>
+            {/* AMBIENT BLURRED BACKDROP */}
+            <Image
               source={
-                imageError || !selectedMovies?.coverimage
+                imageError ||
+                (!selectedMovies?.coverimage && !selectedMovies?.bannerimage)
                   ? require('../../assets/images/fallback.png')
                   : {
-                    uri:
-                      selectedMovies?.coverimage ||
-                      selectedMovies?.bannerimage,
-                    priority: FastImage.priority.high,
-                  }
+                      uri:
+                        selectedMovies?.coverimage ||
+                        selectedMovies?.bannerimage,
+                    }
               }
-              resizeMode={FastImage.resizeMode.cover}
+              style={StyleSheet.absoluteFillObject}
+              resizeMode="cover"
+              blurRadius={Platform.OS === 'ios' ? 25 : 18}
             />
+            <View
+              style={[
+                StyleSheet.absoluteFillObject,
+                { backgroundColor: 'rgba(0,0,0,0.45)' },
+              ]}
+              pointerEvents="none"
+            />
+
+            {/* FOREGROUND CONTAINED IMAGE */}
+            <TouchableOpacity
+              activeOpacity={0.95}
+              style={styles.imageTouchArea}
+              onPress={() => {
+                const imgUri =
+                  selectedMovies?.coverimage || selectedMovies?.bannerimage;
+                if (imgUri) {
+                  navigation.navigate('ImageViewer', {
+                    images: [{ url: imgUri }],
+                    index: 0,
+                  });
+                }
+              }}
+            >
+              <FastImage
+                style={styles.image}
+                onError={() => setImageError(true)}
+                source={
+                  imageError ||
+                  (!selectedMovies?.coverimage && !selectedMovies?.bannerimage)
+                    ? require('../../assets/images/fallback.png')
+                    : {
+                        uri:
+                          selectedMovies?.coverimage ||
+                          selectedMovies?.bannerimage,
+                        priority: FastImage.priority.high,
+                      }
+                }
+                resizeMode={FastImage.resizeMode.contain}
+              />
+            </TouchableOpacity>
 
             {/* TOP OVERLAY */}
             <LinearGradient
               colors={['rgba(0,0,0,0.85)', 'rgba(0,0,0,0.3)', 'transparent']}
               style={styles.gradient}
+              pointerEvents="none"
             />
 
             {/* BOTTOM OVERLAY FOR TITLE */}
             <LinearGradient
-              colors={['transparent', 'rgba(0,0,0,0.92)']}
+              colors={['transparent', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.92)']}
               style={styles.bottomOverlay}
+              pointerEvents="none"
             />
 
-            <View style={styles.headerOverlay}>
+            <View style={styles.headerOverlay} pointerEvents="box-none">
               <AuthHeader
                 transparent
                 showBack
@@ -375,7 +443,7 @@ const SingleMovieDetails = () => {
             </View>
 
             {/* TITLE SECTION */}
-            <View style={styles.titleContainer}>
+            <View style={styles.titleContainer} pointerEvents="box-none">
               <View
                 style={{
                   flexDirection: 'row',
@@ -553,7 +621,7 @@ const SingleMovieDetails = () => {
                 pointerEvents="box-none"
                 style={{
                   position: 'absolute',
-                  top: 350,
+                  bottom: 40,
                   zIndex: 9999,
                   elevation: 20,
 
@@ -1020,8 +1088,16 @@ const styles = StyleSheet.create({
 
   imageWrapper: {
     borderRadius: 10,
-    // overflow: 'hidden',
+    overflow: 'hidden',
     position: 'relative',
+    backgroundColor: '#000',
+  },
+
+  imageTouchArea: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
   gradient: {
@@ -1029,7 +1105,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: 120,
+    height: 90,
     zIndex: 1,
   },
 
@@ -1038,7 +1114,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: 180,
+    height: 140,
     zIndex: 1,
   },
 
@@ -1052,15 +1128,15 @@ const styles = StyleSheet.create({
 
   titleContainer: {
     position: 'absolute',
-    bottom: 40,
-    left: 20,
-    right: 20,
+    bottom: 35,
+    left: 16,
+    right: 16,
     zIndex: 999,
   },
 
   image: {
     width: '100%',
-    height: 400,
+    height: '100%',
   },
 
   contentContainer: {

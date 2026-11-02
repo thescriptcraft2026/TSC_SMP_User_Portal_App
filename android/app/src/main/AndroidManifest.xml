@@ -79,6 +79,14 @@
             android:scheme="https"
             android:host="www.thescriptcraft.com"/>
 
+        <data
+            android:scheme="https"
+            android:host="beta.thescriptcraft.com"/>
+
+        <data
+            android:scheme="https"
+            android:host="www.beta.thescriptcraft.com"/>
+
       </intent-filter>
 
     </activity>

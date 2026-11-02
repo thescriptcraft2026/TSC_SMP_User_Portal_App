@@ -1,4 +1,4 @@
-import React, { memo, useState } from 'react';
+import React, { memo, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   TouchableOpacity,
@@ -26,8 +26,10 @@ import {
   isFacebookUrl,
   isGoogleDocsUrl,
   isGoogleDriveUrl,
+  isInstagramPostUrl,
   isInstagramUrl,
   isTwitterUrl,
+  isVideoUrl,
   isVimeoUrl,
   isYoutubeUrl,
 } from './mediaUtils';
@@ -45,34 +47,42 @@ const MediaViewer = ({ url, height = 220 }: Props) => {
     return null;
   }
 
-  const isImageUrl = (uri: string) =>
-    /\.(jpg|jpeg|png|gif|bmp|webp|svg|avif)$/i.test(
-      uri.split('?')[0],
-    );
+  const trimmed = url.trim();
+  const normalizedUrl =
+    trimmed.startsWith('http://') || trimmed.startsWith('https://')
+      ? trimmed
+      : `https://${trimmed}`;
 
-  const isHttpUrl = /^https?:\/\//i.test(url);
+  // Reset loading and add safety timeout to prevent infinite spinners
+  useEffect(() => {
+    setLoading(true);
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 6000);
+    return () => clearTimeout(timer);
+  }, [normalizedUrl]);
+
+  const isImageUrl = (uri: string) =>
+    /\.(jpg|jpeg|png|gif|bmp|webp|svg|avif)$/i.test(uri.split('?')[0]);
 
   // ------------------------
   // IMAGE
   // ------------------------
-
-  if (isImageUrl(url)) {
+  if (isImageUrl(normalizedUrl)) {
     return (
       <View style={[styles.container, { height: 450 }]}>
         <FastImage
-          source={{ uri: url }}
+          source={{ uri: normalizedUrl }}
           style={styles.image}
           resizeMode={FastImage.resizeMode.cover}
           onLoadStart={() => setLoading(true)}
           onLoadEnd={() => setLoading(false)}
+          onError={() => setLoading(false)}
         />
 
         {loading && (
           <View style={styles.loader}>
-            <ActivityIndicator
-              size="large"
-              color={themeColors.primary}
-            />
+            <ActivityIndicator size="large" color={themeColors.primary} />
           </View>
         )}
       </View>
@@ -82,110 +92,168 @@ const MediaViewer = ({ url, height = 220 }: Props) => {
   // ------------------------
   // YOUTUBE
   // ------------------------
+  if (isYoutubeUrl(normalizedUrl)) {
+    const videoId = getYoutubeId(normalizedUrl);
 
-  if (isYoutubeUrl(url)) {
+    if (videoId) {
+      return (
+        <View style={[styles.container, { height }]}>
+          <YoutubePlayer
+            height={height}
+            play={!paused}
+            videoId={videoId}
+            onReady={() => setLoading(false)}
+            onError={() => setLoading(false)}
+          />
+
+          {loading && (
+            <View style={styles.loader}>
+              <ActivityIndicator size="large" color={themeColors.primary} />
+            </View>
+          )}
+        </View>
+      );
+    }
+
+    // Fallback if no specific videoId (e.g. channel URL or generic youtube.com)
     return (
-      <View style={[styles.container, { height }]}>
-        <YoutubePlayer
-          height={height}
-          play={!paused}
-          videoId={getYoutubeId(url) || ''}
-          onReady={() => setLoading(false)}
-        />
+      <TouchableOpacity
+        activeOpacity={0.85}
+        style={styles.linkCard}
+        onPress={() => Linking.openURL(normalizedUrl)}
+      >
+        <View style={styles.iconBox}>
+          <Text style={[styles.iconText, { color: '#ff0000' }]}>▶</Text>
+        </View>
 
-        {loading && (
-          <View style={styles.loader}>
-            <ActivityIndicator
-              size="large"
-              color={themeColors.primary}
-            />
-          </View>
-        )}
-      </View>
+        <View style={styles.linkContent}>
+          <Text style={styles.linkTitle}>View on YouTube</Text>
+          <Text style={styles.linkDomain}>youtube.com</Text>
+          <Text numberOfLines={1} style={styles.linkUrl}>
+            {normalizedUrl}
+          </Text>
+        </View>
+      </TouchableOpacity>
     );
   }
 
   // ------------------------
-  // WEBVIEW URLS
+  // INSTAGRAM
   // ------------------------
+  if (isInstagramUrl(normalizedUrl)) {
+    if (isInstagramPostUrl(normalizedUrl)) {
+      const webUrl = getInstagramEmbedUrl(normalizedUrl);
+      return (
+        <View style={{ height: 500, borderRadius: 12, overflow: 'hidden' }}>
+          <WebView
+            source={{ uri: webUrl }}
+            style={{ height: 500, borderRadius: 12 }}
+            javaScriptEnabled
+            domStorageEnabled
+            allowsInlineMediaPlayback
+            mediaPlaybackRequiresUserAction={false}
+            startInLoadingState
+            onLoadEnd={() => setLoading(false)}
+            onError={() => setLoading(false)}
+            renderLoading={() => (
+              <View style={styles.loader}>
+                <ActivityIndicator size="large" color={themeColors.primary} />
+              </View>
+            )}
+          />
+        </View>
+      );
+    }
 
+    return (
+      <TouchableOpacity
+        activeOpacity={0.85}
+        style={styles.linkCard}
+        onPress={() => Linking.openURL(normalizedUrl)}
+      >
+        <View style={styles.iconBox}>
+          <Text style={styles.iconText}>📸</Text>
+        </View>
+
+        <View style={styles.linkContent}>
+          <Text style={styles.linkTitle}>View on Instagram</Text>
+          <Text style={styles.linkDomain}>instagram.com</Text>
+          <Text numberOfLines={1} style={styles.linkUrl}>
+            {normalizedUrl}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    );
+  }
+
+  // ------------------------
+  // WEBVIEW URLS (Facebook, Google Drive, Docs, Vimeo)
+  // ------------------------
   let webUrl: string | null = null;
   let webHeight = 500;
 
-  if (isInstagramUrl(url)) {
-    webUrl = getInstagramEmbedUrl(url);
-  } else if (isFacebookUrl(url)) {
-    webUrl = getFacebookEmbedUrl(url);
-  } else if (isGoogleDriveUrl(url)) {
-    webUrl = getGoogleDrivePreviewUrl(url);
-  } else if (isGoogleDocsUrl(url)) {
-    webUrl = getGoogleDocsEmbedUrl(url);
+  if (isFacebookUrl(normalizedUrl)) {
+    webUrl = getFacebookEmbedUrl(normalizedUrl);
+  } else if (isGoogleDriveUrl(normalizedUrl)) {
+    webUrl = getGoogleDrivePreviewUrl(normalizedUrl);
+  } else if (isGoogleDocsUrl(normalizedUrl)) {
+    webUrl = getGoogleDocsEmbedUrl(normalizedUrl);
     webHeight = 420;
-  } else if (isVimeoUrl(url)) {
-    webUrl = getVimeoEmbedUrl(url);
+  } else if (isVimeoUrl(normalizedUrl)) {
+    webUrl = getVimeoEmbedUrl(normalizedUrl);
     webHeight = height;
   }
 
   if (webUrl) {
     return (
-      <WebView
-        source={{ uri: webUrl }}
-        style={{
-          height: webHeight,
-          borderRadius: 12,
-        }}
-        javaScriptEnabled
-        domStorageEnabled
-        allowsInlineMediaPlayback
-        mediaPlaybackRequiresUserAction={false}
-        startInLoadingState
-        renderLoading={() => (
-          <View style={styles.loader}>
-            <ActivityIndicator
-              size="large"
-              color={themeColors.primary}
-            />
-          </View>
-        )}
-      />
+      <View style={{ height: webHeight, borderRadius: 12, overflow: 'hidden' }}>
+        <WebView
+          source={{ uri: webUrl }}
+          style={{
+            height: webHeight,
+            borderRadius: 12,
+          }}
+          javaScriptEnabled
+          domStorageEnabled
+          allowsInlineMediaPlayback
+          mediaPlaybackRequiresUserAction={false}
+          startInLoadingState
+          onLoadEnd={() => setLoading(false)}
+          onError={() => setLoading(false)}
+          renderLoading={() => (
+            <View style={styles.loader}>
+              <ActivityIndicator size="large" color={themeColors.primary} />
+            </View>
+          )}
+        />
+      </View>
     );
   }
 
   // ------------------------
   // TWITTER / X
   // ------------------------
-
-  if (isTwitterUrl(url)) {
+  if (isTwitterUrl(normalizedUrl)) {
     let host = 'x.com';
-
     try {
-      host = new URL(url).hostname.replace('www.', '');
-    } catch { }
+      host = new URL(normalizedUrl).hostname.replace('www.', '');
+    } catch {}
 
     return (
       <TouchableOpacity
         activeOpacity={0.85}
         style={styles.linkCard}
-        onPress={() => Linking.openURL(url)}
+        onPress={() => Linking.openURL(normalizedUrl)}
       >
         <View style={styles.iconBox}>
           <Text style={styles.iconText}>𝕏</Text>
         </View>
 
         <View style={styles.linkContent}>
-          <Text style={styles.linkTitle}>
-            View post on X
-          </Text>
-
-          <Text style={styles.linkDomain}>
-            {host}
-          </Text>
-
-          <Text
-            numberOfLines={1}
-            style={styles.linkUrl}
-          >
-            {url}
+          <Text style={styles.linkTitle}>View post on X</Text>
+          <Text style={styles.linkDomain}>{host}</Text>
+          <Text numberOfLines={1} style={styles.linkUrl}>
+            {normalizedUrl}
           </Text>
         </View>
       </TouchableOpacity>
@@ -193,76 +261,64 @@ const MediaViewer = ({ url, height = 220 }: Props) => {
   }
 
   // ------------------------
-  // GENERIC WEBSITE
+  // DIRECT VIDEO FILES (.mp4, .mov, .m4v, .m3u8, etc.)
   // ------------------------
-
-  if (isHttpUrl) {
-    let host = '';
-
-    try {
-      host = new URL(url).hostname.replace('www.', '');
-    } catch { }
-
+  if (isVideoUrl(normalizedUrl)) {
     return (
       <TouchableOpacity
         activeOpacity={0.9}
-        style={styles.linkCard}
-        onPress={() => Linking.openURL(url)}
+        style={[styles.videoWrapper, { height }]}
+        onPress={() => setPaused(!paused)}
       >
-        <View style={styles.iconBox}>
-          <Text style={styles.iconText}>🌐</Text>
-        </View>
+        <Video
+          source={{ uri: normalizedUrl }}
+          style={styles.video}
+          paused={paused}
+          resizeMode="cover"
+          repeat
+          onLoad={() => setLoading(false)}
+          onLoadStart={() => setLoading(true)}
+          onError={() => setLoading(false)}
+          onBuffer={({ isBuffering }) => setLoading(isBuffering)}
+        />
 
-        <View style={styles.linkContent}>
-          <Text
-            numberOfLines={1}
-            style={styles.linkTitle}
-          >
-            {host}
-          </Text>
-
-          <Text
-            numberOfLines={1}
-            style={styles.linkUrl}
-          >
-            {url}
-          </Text>
-        </View>
+        {loading && (
+          <View style={styles.loader}>
+            <ActivityIndicator size="large" color={themeColors.primary} />
+          </View>
+        )}
       </TouchableOpacity>
     );
   }
 
   // ------------------------
-  // VIDEO
+  // GENERIC WEBSITE / CONTENT LINK CARD
   // ------------------------
+  let host = '';
+  try {
+    host = new URL(normalizedUrl).hostname.replace('www.', '');
+  } catch {
+    host = normalizedUrl;
+  }
 
   return (
     <TouchableOpacity
       activeOpacity={0.9}
-      style={[styles.videoWrapper, { height }]}
-      onPress={() => setPaused(!paused)}
+      style={styles.linkCard}
+      onPress={() => Linking.openURL(normalizedUrl)}
     >
-      <Video
-        source={{ uri: url }}
-        style={styles.video}
-        paused={paused}
-        resizeMode="cover"
-        repeat
-        onLoad={() => setLoading(false)}
-        onLoadStart={() => setLoading(true)}
-        onBuffer={({ isBuffering }) =>
-          setLoading(isBuffering)
-        }
-      />
+      <View style={styles.iconBox}>
+        <Text style={styles.iconText}>🌐</Text>
+      </View>
 
-      {loading && (
-        <View style={styles.loader}>
-          <ActivityIndicator
-            size="large"
-            color={themeColors.primary}
-          />
-        </View>
-      )}
+      <View style={styles.linkContent}>
+        <Text numberOfLines={1} style={styles.linkTitle}>
+          {host}
+        </Text>
+        <Text numberOfLines={1} style={styles.linkUrl}>
+          {normalizedUrl}
+        </Text>
+      </View>
     </TouchableOpacity>
   );
 };
@@ -298,20 +354,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
   },
 
-  // -------------------------
-  // Link Preview Card
-  // -------------------------
-
   linkCard: {
     flexDirection: 'row',
     alignItems: 'center',
-
     borderRadius: 18,
     borderWidth: 1,
     borderColor: '#2E3A47',
-
     backgroundColor: '#0E1116',
-
     padding: 16,
     minHeight: 90,
   },
@@ -320,18 +369,15 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 10,
-
     backgroundColor: '#1B222C',
-
     justifyContent: 'center',
     alignItems: 'center',
-
     marginRight: 14,
   },
 
   iconText: {
     fontSize: 24,
-    color:themeColors.white
+    color: themeColors.white,
   },
 
   linkContent: {

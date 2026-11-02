@@ -1,6 +1,8 @@
-import { navigate } from '../../navigationRef';
+import { navigate, reset } from '../../navigationRef';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { setPendingDeepLink } from './deepLinkStore';
 
-export const handleDeepLink = (url: string) => {
+export const handleDeepLink = async (url: string) => {
   if (!url) return;
 
   console.log('Deep Link URL:', url);
@@ -13,8 +15,7 @@ export const handleDeepLink = (url: string) => {
   // Normalize: strip custom scheme, full HTTP/HTTPS domains, or leading slashes
   route = route
     .replace(/^tsc:\/\//i, '')
-    .replace(/^https?:\/\/(www\.)?thescriptcraft\.com\//i, '')
-    .replace(/^https?:\/\/betatscapi\.thescriptcraft\.com\//i, '')
+    .replace(/^https?:\/\/([a-z0-9-]+\.)*thescriptcraft\.com\//i, '')
     .replace(/^\/+/, '');
 
   if (!route) {
@@ -30,6 +31,33 @@ export const handleDeepLink = (url: string) => {
 
   if (parts.length === 0) {
     return;
+  }
+
+  const type = parts[0].toLowerCase();
+
+  // 🔒 AUTHENTICATION CHECK:
+  // Static public pages that do not require authentication
+  const staticPublicPages = [
+    'privacy',
+    'terms',
+    'about',
+    'contact',
+    'help',
+    'onboarding',
+    'login',
+    'signup',
+  ];
+
+  // If the target is a protected content route (contests, participants, movies, posts, etc.),
+  // verify user has an active session. If unauthenticated, preserve deep link and route to Login.
+  if (!staticPublicPages.includes(type)) {
+    const token = await AsyncStorage.getItem('userAccessToken');
+    if (!token) {
+      console.log('🔒 handleDeepLink: User not logged in, saving pending deep link and redirecting to Login');
+      setPendingDeepLink(url);
+      reset('Auth');
+      return;
+    }
   }
 
   // =====================================================
@@ -53,7 +81,6 @@ export const handleDeepLink = (url: string) => {
     return;
   }
 
-  const type = parts[0].toLowerCase();
   const value = decodeURIComponent(parts.slice(1).join('/'));
 
   console.log('Type:', type);
@@ -138,6 +165,22 @@ export const handleDeepLink = (url: string) => {
     // ==========================
     case 'contest':
     case 'contests':
+      if (parts.length >= 4 && parts[2]?.toLowerCase() === 'participants') {
+        const contestId = decodeURIComponent(parts[1]);
+        const participantId = decodeURIComponent(parts[3]);
+
+        console.log('Opening Contest Participant via Deep Link:', {
+          contestId,
+          participantId,
+        });
+
+        navigate('ParticipateDetails', {
+          id: participantId,
+          contestId,
+        });
+        break;
+      }
+
       if (value) {
         navigate('ContestDetails', {
           contestId: value,

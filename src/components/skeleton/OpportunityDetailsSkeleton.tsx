@@ -1,9 +1,16 @@
 import React from 'react';
-import { View, StyleSheet, useColorScheme } from 'react-native';
+import { View, StyleSheet, useColorScheme, Platform, useWindowDimensions } from 'react-native';
 import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
 
 const OpportunityDetailsSkeleton = () => {
   const isDark = true;
+  const { height: windowHeight } = useWindowDimensions();
+  const bannerHeight = Math.round(
+    Math.min(
+      Math.max(windowHeight * 0.40, 280),
+      Platform.OS === 'ios' && Platform.isPad ? 440 : 380,
+    ),
+  );
 
   const backgroundColor = isDark ? '#1A1A1A' : '#E1E9EE';
   const highlightColor = isDark ? '#333333' : '#F2F8FC';
@@ -22,7 +29,7 @@ const OpportunityDetailsSkeleton = () => {
       >
         <View style={[styles.container]}>
           {/* IMAGE */}
-          <View style={styles.image} />
+          <View style={[styles.image, { height: bannerHeight }]} />
 
           <View style={{ padding: 20 }}>
             {/* TITLE */}

@@ -1,7 +1,11 @@
 import React from 'react';
+import { Linking } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { navigationRef, onNavigationReady } from './navigationRef';
+import { navigationRef, onNavigationReady, reset } from './navigationRef';
+import { setPendingDeepLink } from './src/utils/deepLinkStore';
+import { handleDeepLink } from './src/utils/handleDeepLink';
 import BottomTabs from './src/navigation/BottomTab';
 import SplashScreen from './src/screens/SplashScreen';
 import Login from './src/screens/Auth/Login';
@@ -68,8 +72,57 @@ const linking = {
   prefixes: [
     'https://www.thescriptcraft.com',
     'https://thescriptcraft.com',
+    'https://beta.thescriptcraft.com',
+    'https://www.beta.thescriptcraft.com',
     'tsc://',
   ],
+
+  async getInitialURL() {
+    try {
+      const url = await Linking.getInitialURL();
+      if (!url) return null;
+
+      console.log('🔗 [linking.getInitialURL] Startup URL:', url);
+      setPendingDeepLink(url);
+
+      const token = await AsyncStorage.getItem('userAccessToken');
+      if (!token) {
+        console.log('🔗 [linking.getInitialURL] User is logged out. Delegating to Splash -> Auth');
+        return null;
+      }
+
+      console.log('🔗 [linking.getInitialURL] User has token. Delegating to Splash to validate session');
+      return null;
+    } catch (e) {
+      console.log('🔗 [linking.getInitialURL] Error:', e);
+      return null;
+    }
+  },
+
+  subscribe(listener: (url: string) => void) {
+    const onReceiveURL = async ({ url }: { url: string }) => {
+      if (!url) return;
+      console.log('🔗 [linking.subscribe] URL received while app running:', url);
+
+      try {
+        const token = await AsyncStorage.getItem('userAccessToken');
+        if (!token) {
+          console.log('🔗 [linking.subscribe] User logged out. Saving link and navigating to Login');
+          setPendingDeepLink(url);
+          reset('Auth');
+          return;
+        }
+
+        handleDeepLink(url);
+      } catch (e) {
+        console.log('🔗 [linking.subscribe] Error:', e);
+        handleDeepLink(url);
+      }
+    };
+
+    const subscription = Linking.addEventListener('url', onReceiveURL);
+    return () => subscription.remove();
+  },
 
   config: {
     screens: {
@@ -96,6 +149,7 @@ const linking = {
           SingleMovieDetails: 'movie/:id',
           SinglePostDetailes: 'post/:id',
           ContestDetails: 'contest/:contestId',
+          ParticipateDetails: 'contests/:contestId/participants/:id',
           Profile: 'profile/:id',
           BookDetails: 'book/:bookId',
           SynopsisDetails: 'synopsis/:synopsisId',

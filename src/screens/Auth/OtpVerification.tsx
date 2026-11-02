@@ -33,6 +33,8 @@ import {
 } from '../../redux/slices/authSlice';
 import { useToast } from '../../components/Toast/ToastProvider';
 import { scaleSize, verticalScaleSize } from '../../utils/responsive';
+import { clearPendingDeepLink, getPendingDeepLink } from '../../utils/deepLinkStore';
+import { handleDeepLink } from '../../utils/handleDeepLink';
 
 const OtpVerification = ({ navigation, route }: any) => {
   const isDark = useColorScheme() === 'dark';
@@ -125,6 +127,14 @@ const OtpVerification = ({ navigation, route }: any) => {
           index: 0,
           routes: [{ name: 'App' }],
         });
+
+        const pendingUrl = getPendingDeepLink();
+        if (pendingUrl) {
+          clearPendingDeepLink();
+          setTimeout(() => {
+            handleDeepLink(pendingUrl);
+          }, 400);
+        }
 
         return;
       }

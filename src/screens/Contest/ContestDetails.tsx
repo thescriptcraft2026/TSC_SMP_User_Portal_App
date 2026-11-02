@@ -1,4 +1,6 @@
 import {
+  Dimensions,
+  Image,
   Platform,
   ScrollView,
   StatusBar,
@@ -68,7 +70,17 @@ const ContestDetails = () => {
   const dispatch = useDispatch<any>();
   const { show } = useToast();
   const [showFullDescription, setShowFullDescription] = useState(false);
-  const { width } = useWindowDimensions();
+  const { width, height: windowHeight } = useWindowDimensions();
+  const bannerHeight = useMemo(
+    () =>
+      Math.round(
+        Math.min(
+          Math.max(windowHeight * 0.40, 280),
+          Platform.OS === 'ios' && Platform.isPad ? 440 : 380,
+        ),
+      ),
+    [windowHeight],
+  );
   const [imageError, setImageError] = useState(false);
 
   const { selectedContest, bookmarkedIds, loading, error: contestError } = useSelector(
@@ -267,7 +279,13 @@ const ContestDetails = () => {
         />
       );
     }
-    return <ContestDetailsSkeleton />;
+    return (
+      <NotFoundScreen
+        title="Contest Not Found"
+        description="Unable to load contest details. Please try again later."
+        showButton={true}
+      />
+    );
   }
 
   return (
@@ -288,33 +306,70 @@ const ContestDetails = () => {
           paddingBottom: insets.bottom + 100,
         }}
       >
-        <View style={styles.imageWrapper}>
-          <FastImage
+        <View style={[styles.imageWrapper, { height: bannerHeight }]}>
+          {/* AMBIENT BLURRED BACKDROP */}
+          <Image
             source={
               imageError || !selectedContest?.image
                 ? require('../../assets/images/fallback.png')
-                : {
-                    uri: selectedContest?.image,
-                    priority: FastImage.priority.high,
-                  }
+                : { uri: selectedContest?.image }
             }
-            style={styles.image}
+            style={StyleSheet.absoluteFillObject}
+            resizeMode="cover"
+            blurRadius={Platform.OS === 'ios' ? 25 : 18}
           />
+          <View
+            style={[
+              StyleSheet.absoluteFillObject,
+              { backgroundColor: 'rgba(0,0,0,0.45)' },
+            ]}
+            pointerEvents="none"
+          />
+
+          {/* FOREGROUND CONTAINED IMAGE */}
+          <TouchableOpacity
+            activeOpacity={0.95}
+            style={styles.imageTouchArea}
+            onPress={() => {
+              if (selectedContest?.image) {
+                navigation.navigate('ImageViewer', {
+                  images: [{ url: selectedContest.image }],
+                  index: 0,
+                });
+              }
+            }}
+          >
+            <FastImage
+              source={
+                imageError || !selectedContest?.image
+                  ? require('../../assets/images/fallback.png')
+                  : {
+                      uri: selectedContest?.image,
+                      priority: FastImage.priority.high,
+                    }
+              }
+              style={styles.image}
+              resizeMode={FastImage.resizeMode.contain}
+              onError={() => setImageError(true)}
+            />
+          </TouchableOpacity>
 
           {/* TOP OVERLAY */}
           <LinearGradient
             colors={['rgba(0,0,0,0.85)', 'rgba(0,0,0,0.3)', 'transparent']}
             style={styles.gradient}
+            pointerEvents="none"
           />
 
           {/* BOTTOM OVERLAY FOR TITLE */}
           <LinearGradient
-            colors={['transparent', 'rgba(0,0,0,0.92)']}
+            colors={['transparent', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.92)']}
             style={styles.bottomOverlay}
+            pointerEvents="none"
           />
 
           {/* HEADER */}
-          <View style={styles.headerOverlay}>
+          <View style={styles.headerOverlay} pointerEvents="box-none">
             <AuthHeader
               transparent
               showBack
@@ -327,7 +382,7 @@ const ContestDetails = () => {
           </View>
 
           {/* TITLE SECTION */}
-          <View style={styles.titleContainer}>
+          <View style={styles.titleContainer} pointerEvents="box-none">
             <View style={{ flexDirection: 'row', gap: 6 }}>
               <View style={styles.contestBadge}>
                 <StarTwo size={18} color={themeColors.primary} />
@@ -761,13 +816,22 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     overflow: 'hidden',
     position: 'relative',
+    backgroundColor: '#000',
   },
+
+  imageTouchArea: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
   gradient: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    height: 120, // adjust based on header height
+    height: 90, // adjust based on header height
     zIndex: 1,
   },
 
@@ -784,15 +848,15 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: 180,
+    height: 140,
     zIndex: 1,
   },
 
   titleContainer: {
     position: 'absolute',
-    bottom: 10,
-    left: 20,
-    right: 20,
+    bottom: 16,
+    left: 16,
+    right: 16,
     zIndex: 10,
   },
 
@@ -821,7 +885,7 @@ const styles = StyleSheet.create({
 
   image: {
     width: '100%',
-    height: 400,
+    height: '100%',
   },
 
   actionContainer: {

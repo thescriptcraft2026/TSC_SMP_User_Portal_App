@@ -28,6 +28,8 @@ import {
 import { useToast } from '../../components/Toast/ToastProvider';
 import FloatingInputTwo from '../../components/Input/FloatingInputTwo';
 import { reset } from '../../../navigationRef';
+import { clearPendingDeepLink, getPendingDeepLink } from '../../utils/deepLinkStore';
+import { handleDeepLink } from '../../utils/handleDeepLink';
 
 const BioSetupScreen = ({ navigation, route }: any) => {
   const { show } = useToast();
@@ -88,6 +90,14 @@ const BioSetupScreen = ({ navigation, route }: any) => {
         screen: 'BottomTab',
         params: { screen: 'Feed' },
       });
+
+      const pendingUrl = getPendingDeepLink();
+      if (pendingUrl) {
+        clearPendingDeepLink();
+        setTimeout(() => {
+          handleDeepLink(pendingUrl);
+        }, 400);
+      }
     } catch (error: any) {
       show({
         type: 'error',
@@ -105,6 +115,14 @@ const BioSetupScreen = ({ navigation, route }: any) => {
       screen: 'BottomTab',
       params: { screen: 'Feed' },
     });
+
+    const pendingUrl = getPendingDeepLink();
+    if (pendingUrl) {
+      clearPendingDeepLink();
+      setTimeout(() => {
+        handleDeepLink(pendingUrl);
+      }, 400);
+    }
   };
 
   return (

@@ -1,16 +1,24 @@
 export const isYoutubeUrl = (url?: string) =>
-  !!url && (url.includes('youtube.com') || url.includes('youtu.be'));
+  !!url && /(youtube\.com|youtu\.be)/i.test(url);
 
 export const isInstagramUrl = (url?: string) =>
-  !!url && url.includes('instagram.com') && !url.includes('/stories/');
+  !!url && /instagram\.com/i.test(url) && !url.toLowerCase().includes('/stories/');
+
+export const isInstagramPostUrl = (url?: string) =>
+  !!url && /instagram\.com\/(reel|p|tv)\/[A-Za-z0-9_-]+/i.test(url);
+
+export const isVideoUrl = (url?: string) =>
+  !!url && /\.(mp4|m4v|mov|mkv|webm|m3u8|ts)(\?.*)?$/i.test(url.split('?')[0]);
 
 export const getYoutubeId = (url?: string) => {
   if (!url) return null;
 
   const regExp =
-    /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([^?&/]+)/;
+    /(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?|shorts|live)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i;
 
-  return url.match(regExp)?.[1] || null;
+  const match = url.match(regExp);
+
+  return match?.[1] || null;
 };
 
 export const getInstagramEmbedUrl = (url?: string) => {

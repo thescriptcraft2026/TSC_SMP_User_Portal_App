@@ -1,4 +1,5 @@
 import {
+  Image,
   Platform,
   RefreshControl,
   ScrollView,
@@ -6,6 +7,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -23,6 +25,7 @@ import { Fonts } from '../../constants/Fonts';
 import PrimaryButton from '../../components/Buttons/PrimaryButton';
 import LinearGradient from 'react-native-linear-gradient';
 import SingleMovieDetailsSkeleton from '../Movie/components/SingleMovieDetailsSkeleton';
+import NotFoundScreen from '../NotFoundScreen';
 import RatingModal from '../../components/Modals/RatingModal';
 import Avatar from '../../components/Avatar/Avatar';
 import HeartActive from '../../assets/SVG/HeartActive';
@@ -52,6 +55,17 @@ const ParticipateDetails = () => {
   const route = useRoute<any>();
   const { id } = route.params;
   const isDark = true;
+  const { height: windowHeight } = useWindowDimensions();
+  const bannerHeight = useMemo(
+    () =>
+      Math.round(
+        Math.min(
+          Math.max(windowHeight * 0.40, 280),
+          Platform.OS === 'ios' && Platform.isPad ? 440 : 380,
+        ),
+      ),
+    [windowHeight],
+  );
   const [ratingVisible, setRatingVisible] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const dispatch = useDispatch<any>();
@@ -67,7 +81,7 @@ const ParticipateDetails = () => {
     [isDark],
   );
   const textPrimary = isDark ? themeColors.white : themeColors.black;
-  const { selectedParticipant, loading } = useSelector(
+  const { selectedParticipant, loading, error: participantError } = useSelector(
     (state: any) => state.contest,
   );
   const { likedIds } = useSelector((state: any) => state.actions);
@@ -160,8 +174,22 @@ const ParticipateDetails = () => {
     !!selectedParticipant?.link;
 
   // ✅ 👉 PLACE IT HERE (BEFORE RETURN UI)
-  if (loading || !selectedParticipant) {
+  if (loading) {
     return <SingleMovieDetailsSkeleton />;
+  }
+
+  if (!selectedParticipant) {
+    return (
+      <NotFoundScreen
+        title="Submission Not Found"
+        description={
+          typeof participantError === 'string'
+            ? participantError
+            : 'Unable to load participant details. Please try again later.'
+        }
+        showButton={true}
+      />
+    );
   }
 
   const handleRate = async (rating: number) => {
@@ -228,29 +256,63 @@ const ParticipateDetails = () => {
           }}
         >
           {/* IMAGE */}
-          <View style={styles.imageWrapper}>
-            <FastImage
+          <View style={[styles.imageWrapper, { height: bannerHeight }]}>
+            {/* AMBIENT BLURRED BACKDROP */}
+            <Image
               source={
                 imageError || !selectedParticipant?.image
                   ? require('../../assets/images/fallback.png')
-                  : {
-                    uri: selectedParticipant?.image,
-                    priority: FastImage.priority.high,
-                  }
+                  : { uri: selectedParticipant?.image }
               }
-              style={styles.image}
-              resizeMode={FastImage.resizeMode.cover}
-              onError={() => setImageError(true)}
-              defaultSource={require('../../assets/images/fallback.png')}
+              style={StyleSheet.absoluteFillObject}
+              resizeMode="cover"
+              blurRadius={Platform.OS === 'ios' ? 25 : 18}
             />
+            <View
+              style={[
+                StyleSheet.absoluteFillObject,
+                { backgroundColor: 'rgba(0,0,0,0.45)' },
+              ]}
+              pointerEvents="none"
+            />
+
+            {/* FOREGROUND CONTAINED IMAGE */}
+            <TouchableOpacity
+              activeOpacity={0.95}
+              style={styles.imageTouchArea}
+              onPress={() => {
+                if (selectedParticipant?.image) {
+                  navigation.navigate('ImageViewer', {
+                    images: [{ url: selectedParticipant.image }],
+                    index: 0,
+                  });
+                }
+              }}
+            >
+              <FastImage
+                source={
+                  imageError || !selectedParticipant?.image
+                    ? require('../../assets/images/fallback.png')
+                    : {
+                        uri: selectedParticipant?.image,
+                        priority: FastImage.priority.high,
+                      }
+                }
+                style={styles.image}
+                resizeMode={FastImage.resizeMode.contain}
+                onError={() => setImageError(true)}
+                defaultSource={require('../../assets/images/fallback.png')}
+              />
+            </TouchableOpacity>
 
             {/* 🔥 GRADIENT OVERLAY */}
             <LinearGradient
-              colors={['rgba(0,0,0,0.9)', 'rgba(0,0,0,0.6)', 'transparent']}
+              colors={['rgba(0,0,0,0.85)', 'rgba(0,0,0,0.3)', 'transparent']}
               style={styles.gradient}
+              pointerEvents="none"
             />
             {/* HEADER */}
-            <View style={styles.headerOverlay}>
+            <View style={styles.headerOverlay} pointerEvents="box-none">
               <AuthHeader
                 transparent
                 showBack
@@ -276,7 +338,7 @@ const ParticipateDetails = () => {
               <View
                 style={{
                   position: 'absolute',
-                  top: 350,
+                  bottom: 40,
 
                   zIndex: 9999,
                   elevation: 20,
@@ -583,6 +645,17 @@ const styles = StyleSheet.create({
 
   imageWrapper: {
     position: 'relative',
+    overflow: 'hidden',
+    borderBottomLeftRadius: 35,
+    borderBottomRightRadius: 35,
+    backgroundColor: '#000',
+  },
+
+  imageTouchArea: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
   gradient: {
@@ -590,7 +663,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: 120, // adjust based on header height
+    height: 90, // adjust based on header height
     zIndex: 1,
   },
 
@@ -604,9 +677,7 @@ const styles = StyleSheet.create({
 
   image: {
     width: '100%',
-    height: 400,
-    borderBottomLeftRadius: 45,
-    borderBottomRightRadius: 45,
+    height: '100%',
   },
 
   actionContainer: {

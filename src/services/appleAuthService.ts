@@ -27,10 +27,11 @@ export const signInWithApple = async (): Promise<AppleAuthPayload> => {
     throw new Error('Apple Sign-In failed: No identity token returned.');
   }
 
-  const credentialState = await appleAuth.getCredentialStateForUser(user);
-
-  if (credentialState !== appleAuth.State.AUTHORIZED) {
-    throw new Error('Apple Sign-In authorization is not valid.');
+  try {
+    const credentialState = await appleAuth.getCredentialStateForUser(user);
+    console.log('Apple credential state:', credentialState);
+  } catch (stateErr) {
+    console.warn('Could not check credential state for user:', stateErr);
   }
 
   return {

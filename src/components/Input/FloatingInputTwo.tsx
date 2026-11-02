@@ -119,11 +119,17 @@ const FloatingInputTwo = ({
     }).start();
   }, [value, focused]);
 
-  const borderColor = focused ? activeBorder : inactiveBorder;
+  const borderColor = error ? '#ff4d4f' : focused ? activeBorder : inactiveBorder;
 
-  // Determine label color based on focused or value state
+  // Determine label color based on focused, value, or error state
   const isFloated = value || focused;
-  const labelColor = isFloated ? themeColors.primary : isDark ? '#aaa' : '#666';
+  const labelColor = error
+    ? '#ff4d4f'
+    : isFloated
+      ? themeColors.primary
+      : isDark
+        ? '#aaa'
+        : '#666';
 
   const labelStyle = {
     position: 'absolute' as const,

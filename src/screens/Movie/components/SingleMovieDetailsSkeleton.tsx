@@ -1,10 +1,17 @@
 import React from 'react';
-import { View, StyleSheet, Platform, useColorScheme } from 'react-native';
+import { View, StyleSheet, Platform, useColorScheme, useWindowDimensions } from 'react-native';
 import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const SingleMovieDetailsSkeleton = () => {
   const isDark = true;
+  const { height: windowHeight } = useWindowDimensions();
+  const bannerHeight = Math.round(
+    Math.min(
+      Math.max(windowHeight * 0.40, 280),
+      Platform.OS === 'ios' && Platform.isPad ? 440 : 380,
+    ),
+  );
 
   return (
     <SafeAreaView
@@ -20,7 +27,7 @@ const SingleMovieDetailsSkeleton = () => {
       >
         <View>
           {/* IMAGE */}
-          <View style={styles.image} />
+          <View style={[styles.image, { height: bannerHeight }]} />
 
           {/* HEADER */}
           <View style={styles.header}>

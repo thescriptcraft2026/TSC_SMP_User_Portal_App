@@ -112,7 +112,7 @@ const ImageUploader = ({
           style={[
             styles.dropArea,
             {
-              borderColor: themeColors.primary,
+              borderColor: error ? '#ff4d4f' : themeColors.primary,
               backgroundColor: isDark ? '#1c1c1e' : '#fafafa',
             },
           ]}

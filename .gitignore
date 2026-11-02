@@ -84,7 +84,4 @@ yarn-error.log
 .vscode/extensions.json
 .vscode/launch.json
 .vscode/settings.json
-.env
-.env
-.env
-.env
+release_builds/

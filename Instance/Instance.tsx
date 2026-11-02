@@ -117,7 +117,7 @@ api.interceptors.response.use(
           navigationRef.dispatch(
             CommonActions.reset({
               index: 0,
-              routes: [{ name: 'Onboarding' }],
+              routes: [{ name: 'Auth' }],
             }),
           );
         }
@@ -152,7 +152,7 @@ api.interceptors.response.use(
           navigationRef.dispatch(
             CommonActions.reset({
               index: 0,
-              routes: [{ name: 'Onboarding' }],
+              routes: [{ name: 'Auth' }],
             }),
           );
         }
@@ -176,7 +176,7 @@ api.interceptors.response.use(
               navigationRef.dispatch(
                 CommonActions.reset({
                   index: 0,
-                  routes: [{ name: 'Onboarding' }],
+                  routes: [{ name: 'Auth' }],
                 }),
               );
             }

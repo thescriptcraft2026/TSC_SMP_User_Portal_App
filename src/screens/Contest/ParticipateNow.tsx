@@ -71,6 +71,7 @@ const ParticipateNow = () => {
     formState: { errors },
     watch,
   } = useForm({
+    mode: 'onChange',
     defaultValues: {
       title: '',
       story: '',
@@ -88,6 +89,7 @@ const ParticipateNow = () => {
   const plainText =
     contestStory
       ?.replace(/<[^>]*>/g, '')
+      .replace(/&nbsp;/g, ' ')
       .replace(/\s+/g, ' ')
       .trim() || '';
 
@@ -96,17 +98,55 @@ const ParticipateNow = () => {
   const MIN_WORDS = 1500;
   const MAX_WORDS = 3500;
 
+  const isLinkRequired =
+    contest_id?.submission_type === 'link' ||
+    contest_id?.link_type === 'youtube' ||
+    contest_id?.link_type === 'instagram' ||
+    contest_id?.link_type === 'all';
+
   const handleBack = () => navigation.goBack();
+
+  const onInvalid = (formErrors: any) => {
+    console.log('Form validation errors:', formErrors);
+    const firstError = Object.values(formErrors)[0] as any;
+    const message =
+      firstError?.message || 'Please fill in all required fields correctly.';
+    show({
+      type: 'error',
+      title: message,
+    });
+  };
 
   const onSubmit = async (data: any) => {
     try {
+      const trimmedTitle = data.title?.trim();
+      const trimmedStory = data.story?.trim();
+      const trimmedLink = data.link?.trim() || '';
+      const normalizedLink = trimmedLink
+        ? trimmedLink.startsWith('http://') || trimmedLink.startsWith('https://')
+          ? trimmedLink
+          : `https://${trimmedLink}`
+        : '';
+
+      let detectedPlatform = data.platform || 'all';
+      const lowerUrl = normalizedLink.toLowerCase();
+      if (lowerUrl.includes('youtube.com') || lowerUrl.includes('youtu.be')) {
+        detectedPlatform = 'youtube';
+      } else if (lowerUrl.includes('instagram.com')) {
+        detectedPlatform = 'instagram';
+      }
+
       const formData = new FormData();
-      formData.append('title', data.title);
-      formData.append('story', data.story);
-      formData.append('contest_story', data.contest_story);
-      formData.append('link', data.link);
-      formData.append('platform', data.platform);
-      formData.append('status', data.status);
+      formData.append('title', trimmedTitle);
+      formData.append('story', trimmedStory);
+      if (data.contest_story) {
+        formData.append('contest_story', data.contest_story);
+      }
+      if (normalizedLink) {
+        formData.append('link', normalizedLink);
+      }
+      formData.append('platform', detectedPlatform);
+      formData.append('status', data.status || 'publish');
 
       if (contest_id?.submission_type === 'image') {
         if (data.submissionMedia?.length > 0) {
@@ -140,16 +180,30 @@ const ParticipateNow = () => {
       console.log('Submit success', res);
       show({
         type: 'success',
-        title: res.message || res.data.message || res?.payload?.message,
+        title: res?.message || res?.data?.message || res?.payload?.message || 'Entry submitted successfully!',
       });
+
+      const participantId =
+        res?.data?.id || res?.data?.participant?.id || res?.id;
+      const entryTitle = res?.data?.title || trimmedTitle;
+
       navigation.navigate('SuccessScreen', {
         contestId: contest_id?.id,
+        participantId,
+        title: entryTitle,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.log('Submit error', error);
+      const errMsg =
+        typeof error === 'string'
+          ? error
+          : error?.message ||
+            error?.data?.message ||
+            error?.payload?.message ||
+            'Failed to submit entry. Please try again.';
       show({
         type: 'error',
-        title: error,
+        title: errMsg,
       });
     }
   };
@@ -205,13 +259,23 @@ const ParticipateNow = () => {
 
           <Controller
             control={control}
-            rules={{ required: 'Title is required' }}
+            rules={{
+              required: 'Title is required',
+              validate: (val: string) => {
+                const trimmed = val?.trim();
+                if (!trimmed) return 'Title is required';
+                if (trimmed.length < 3) return 'Title must be at least 3 characters';
+                if (trimmed.length > 100) return 'Title cannot exceed 100 characters';
+                return true;
+              },
+            }}
             name="title"
             render={({ field: { onChange, value } }) => (
               <FloatingInputTwo
                 label="Enter title"
                 value={value}
                 onChangeText={onChange}
+                maxLength={100}
                 error={errors.title?.message}
               />
             )}
@@ -234,102 +298,108 @@ const ParticipateNow = () => {
             name="story"
             rules={{
               required: 'Description is required',
-              minLength: {
-                value: 20,
-                message: 'Description must be at least 20 characters',
+              validate: (val: string) => {
+                const trimmed = val?.trim();
+                if (!trimmed) return 'Description is required';
+                if (trimmed.length < 20) return 'Description must be at least 20 characters';
+                if (trimmed.length > 2000) return 'Description cannot exceed 2000 characters';
+                return true;
               },
             }}
             render={({ field: { onChange, value } }) => (
-              <>
-                <FloatingInputTwo
-                  label="Write description..."
-                  value={value}
-                  onChangeText={onChange}
-                  multiline
-                  height={50}
-                  error={errors.story?.message}
-                  showCharacterCount
-                  minLength={20}
-                  maxLength={100}
-                  showBottomText
-                  bottomText={`Minimum 20 characters`}
-                />
-              </>
+              <FloatingInputTwo
+                label="Write description..."
+                value={value}
+                onChangeText={onChange}
+                multiline
+                height={60}
+                error={errors.story?.message}
+                showCharacterCount
+                minLength={20}
+                maxLength={2000}
+                showBottomText
+                bottomText="Minimum 20 characters"
+              />
             )}
           />
         </View>
 
         {/* URL */}
-        {(contest_id?.link_type === 'youtube' ||
-          contest_id?.link_type === 'instagram' ||
-          contest_id?.link_type === 'all') && (
-            <View style={[styles.card, { backgroundColor: cardBg }]}>
-              <Text
-                style={[
-                  styles.sectionTitle,
-                  { color: isDark ? themeColors.white : themeColors.black },
-                ]}
-              >
-                Content URL <Text style={{ color: 'red' }}>*</Text>
-              </Text>
+        {isLinkRequired && (
+          <View style={[styles.card, { backgroundColor: cardBg }]}>
+            <Text
+              style={[
+                styles.sectionTitle,
+                { color: isDark ? themeColors.white : themeColors.black },
+              ]}
+            >
+              Content URL <Text style={{ color: 'red' }}>*</Text>
+            </Text>
 
-              <Controller
-                control={control}
-                name="link"
-                rules={{
-                  required: 'Content URL is required',
-                  validate: value => {
-                    const url = value?.trim();
+            <Controller
+              control={control}
+              name="link"
+              rules={{
+                required: 'Content URL is required',
+                validate: (value: string) => {
+                  const url = value?.trim();
+                  if (!url) {
+                    return 'Content URL is required';
+                  }
 
-                    if (!url) {
-                      return 'Content URL is required';
-                    }
+                  const youtubeRegex =
+                    /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|shorts\/|live\/)|youtu\.be\/)[A-Za-z0-9_-]+/i;
+                  const instagramRegex =
+                    /^(https?:\/\/)?(www\.)?instagram\.com\/(reel|p|tv|stories)\/[A-Za-z0-9_-]+/i;
+                  const generalUrlRegex =
+                    /^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(\/[^\s]*)?$/i;
 
-                    // No platform validation for "all"
-                    if (contest_id?.link_type === 'all') {
-                      return true;
-                    }
+                  const lower = url.toLowerCase();
 
-                    const youtubeRegex =
-                      /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtube\.com\/shorts\/|youtu\.be\/)[A-Za-z0-9_-]+/i;
+                  if (
+                    contest_id?.link_type === 'youtube' ||
+                    lower.includes('youtube.com') ||
+                    lower.includes('youtu.be')
+                  ) {
+                    return (
+                      youtubeRegex.test(url) ||
+                      'Please enter a valid YouTube video link (e.g. https://youtube.com/watch?v=... or https://youtu.be/...)'
+                    );
+                  }
 
-                    const instagramRegex =
-                      /^(https?:\/\/)?(www\.)?instagram\.com\/(reel|p|tv)\/[A-Za-z0-9_-]+\/?/i;
+                  if (
+                    contest_id?.link_type === 'instagram' ||
+                    lower.includes('instagram.com')
+                  ) {
+                    return (
+                      instagramRegex.test(url) ||
+                      'Please enter a valid Instagram post/reel link (e.g. https://instagram.com/reel/...)'
+                    );
+                  }
 
-                    if (contest_id?.link_type === 'youtube') {
-                      return (
-                        youtubeRegex.test(url) ||
-                        'Please enter a valid YouTube URL'
-                      );
-                    }
-
-                    if (contest_id?.link_type === 'instagram') {
-                      return (
-                        instagramRegex.test(url) ||
-                        'Please enter a valid Instagram URL'
-                      );
-                    }
-
-                    return true;
-                  },
-                }}
-                render={({ field: { onChange, value } }) => (
-                  <FloatingInputTwo
-                    label={
-                      contest_id?.link_type === 'youtube'
-                        ? 'Paste your YouTube content link'
-                        : contest_id?.link_type === 'instagram'
-                          ? 'Paste your Instagram content link'
-                          : 'Paste your content link'
-                    }
-                    value={value}
-                    onChangeText={onChange}
-                    error={errors.link?.message}
-                  />
-                )}
-              />
-            </View>
-          )}
+                  return (
+                    generalUrlRegex.test(url) ||
+                    'Please enter a valid web URL'
+                  );
+                },
+              }}
+              render={({ field: { onChange, value } }) => (
+                <FloatingInputTwo
+                  label={
+                    contest_id?.link_type === 'youtube'
+                      ? 'Paste your YouTube content link'
+                      : contest_id?.link_type === 'instagram'
+                        ? 'Paste your Instagram content link'
+                        : 'Paste your content link'
+                  }
+                  value={value}
+                  onChangeText={onChange}
+                  error={errors.link?.message}
+                />
+              )}
+            />
+          </View>
+        )}
 
         {contest_id?.submission_type === 'text' && (
           <View style={[styles.card, { backgroundColor: cardBg }]}>
@@ -360,10 +430,11 @@ const ParticipateNow = () => {
               name="contest_story"
               rules={{
                 required: 'Content is required',
-                validate: value => {
+                validate: (value: string) => {
                   const text =
                     value
                       ?.replace(/<[^>]*>/g, '')
+                      .replace(/&nbsp;/g, ' ')
                       .replace(/\s+/g, ' ')
                       .trim() ?? '';
 
@@ -371,12 +442,16 @@ const ParticipateNow = () => {
                     ? text.split(' ').filter(Boolean).length
                     : 0;
 
+                  if (words === 0) {
+                    return 'Content is required';
+                  }
+
                   if (words < MIN_WORDS) {
-                    return `Content must be at least ${MIN_WORDS} words`;
+                    return `Content must be at least ${MIN_WORDS} words (currently ${words})`;
                   }
 
                   if (words > MAX_WORDS) {
-                    return `Content cannot exceed ${MAX_WORDS} words`;
+                    return `Content cannot exceed ${MAX_WORDS} words (currently ${words})`;
                   }
 
                   return true;
@@ -461,8 +536,9 @@ const ParticipateNow = () => {
             control={control}
             name="image"
             rules={{
-              validate: value =>
-                value?.length > 0 || 'Poster image is required',
+              validate: (value: any) =>
+                (Array.isArray(value) && value.length > 0) ||
+                'Poster image is required',
             }}
             render={({ field: { value, onChange }, fieldState: { error } }) => (
               <ImageUploader
@@ -497,8 +573,9 @@ const ParticipateNow = () => {
               control={control}
               name="submissionMedia"
               rules={{
-                validate: value =>
-                  value?.length > 0 || 'Contest media is required',
+                validate: (value: any) =>
+                  (Array.isArray(value) && value.length > 0) ||
+                  'Contest media is required',
               }}
               render={({ field: { value, onChange }, fieldState: { error } }) => (
                 <ImageUploader
@@ -522,7 +599,7 @@ const ParticipateNow = () => {
         {/* SUBMIT */}
         <PrimaryButton
           title="Enter Contest"
-          onPress={handleSubmit(onSubmit)}
+          onPress={handleSubmit(onSubmit, onInvalid)}
           style={styles.button}
           loading={participateLoading}
           disabled={participateLoading}

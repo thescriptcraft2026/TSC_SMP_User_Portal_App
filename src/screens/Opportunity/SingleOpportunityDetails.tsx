@@ -1,5 +1,6 @@
 import {
   Alert,
+  Image,
   Platform,
   ScrollView,
   StatusBar,
@@ -72,7 +73,17 @@ const SingleOpportunityDetails = () => {
   const [reportVisible, setReportVisible] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const { width } = useWindowDimensions();
+  const { width, height: windowHeight } = useWindowDimensions();
+  const bannerHeight = useMemo(
+    () =>
+      Math.round(
+        Math.min(
+          Math.max(windowHeight * 0.40, 280),
+          Platform.OS === 'ios' && Platform.isPad ? 440 : 380,
+        ),
+      ),
+    [windowHeight],
+  );
   const { handleShare } = useShare();
 
   const isDark = true;
@@ -368,33 +379,70 @@ const SingleOpportunityDetails = () => {
         overScrollMode="never"
       >
         {/* IMAGE */}
-        <View style={styles.imageWrapper}>
-          <FastImage
+        <View style={[styles.imageWrapper, { height: bannerHeight }]}>
+          {/* AMBIENT BLURRED BACKDROP */}
+          <Image
             source={
               imageError || !selectedOpportunity?.poster_url
                 ? require('../../assets/images/fallback.png')
-                : {
-                  uri: selectedOpportunity?.poster_url,
-                  priority: FastImage.priority.high,
-                }
+                : { uri: selectedOpportunity?.poster_url }
             }
-            style={styles.image}
+            style={StyleSheet.absoluteFillObject}
+            resizeMode="cover"
+            blurRadius={Platform.OS === 'ios' ? 25 : 18}
           />
+          <View
+            style={[
+              StyleSheet.absoluteFillObject,
+              { backgroundColor: 'rgba(0,0,0,0.45)' },
+            ]}
+            pointerEvents="none"
+          />
+
+          {/* FOREGROUND CONTAINED IMAGE */}
+          <TouchableOpacity
+            activeOpacity={0.95}
+            style={styles.imageTouchArea}
+            onPress={() => {
+              if (selectedOpportunity?.poster_url) {
+                navigation.navigate('ImageViewer', {
+                  images: [{ url: selectedOpportunity.poster_url }],
+                  index: 0,
+                });
+              }
+            }}
+          >
+            <FastImage
+              source={
+                imageError || !selectedOpportunity?.poster_url
+                  ? require('../../assets/images/fallback.png')
+                  : {
+                      uri: selectedOpportunity?.poster_url,
+                      priority: FastImage.priority.high,
+                    }
+              }
+              style={styles.image}
+              resizeMode={FastImage.resizeMode.contain}
+              onError={() => setImageError(true)}
+            />
+          </TouchableOpacity>
 
           {/* TOP OVERLAY */}
           <LinearGradient
             colors={['rgba(0,0,0,0.85)', 'rgba(0,0,0,0.3)', 'transparent']}
             style={styles.gradient}
+            pointerEvents="none"
           />
 
           {/* BOTTOM OVERLAY FOR TITLE */}
           <LinearGradient
-            colors={['transparent', 'rgba(0,0,0,0.92)']}
+            colors={['transparent', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.92)']}
             style={styles.bottomOverlay}
+            pointerEvents="none"
           />
 
           {/* HEADER */}
-          <View style={styles.headerOverlay}>
+          <View style={styles.headerOverlay} pointerEvents="box-none">
             <AuthHeader
               transparent
               showBack
@@ -441,7 +489,7 @@ const SingleOpportunityDetails = () => {
           </View>
 
           {/* TITLE SECTION */}
-          <View style={styles.titleContainer}>
+          <View style={styles.titleContainer} pointerEvents="box-none">
             <StatusBadge status={status} />
             <Text style={styles.title} numberOfLines={2} ellipsizeMode="tail">
               {selectedOpportunity?.title}
@@ -846,8 +894,16 @@ const styles = StyleSheet.create({
 
   imageWrapper: {
     borderRadius: 10,
-    // overflow: 'hidden',
+    overflow: 'hidden',
     position: 'relative',
+    backgroundColor: '#000',
+  },
+
+  imageTouchArea: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
   gradient: {
@@ -855,7 +911,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: 120,
+    height: 90,
     zIndex: 1,
   },
 
@@ -872,13 +928,13 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: 180,
+    height: 140,
     zIndex: 1,
   },
 
   image: {
     width: '100%',
-    height: 350,
+    height: '100%',
   },
 
   actionContainer: {
