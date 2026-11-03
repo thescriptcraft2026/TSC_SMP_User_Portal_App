@@ -6,8 +6,8 @@ import {
 import Config from 'react-native-config';
 import { navigationRef } from '../navigationRef';
 
-export const DEFAULT_API_BASE_URL = 'https://betatscapi.thescriptcraft.com/v1/user';
-export const DEFAULT_SOCKET_URL = 'https://betatscapi.thescriptcraft.com';
+export const DEFAULT_API_BASE_URL = 'https://tscapi.thescriptcraft.com/v1/user';
+export const DEFAULT_SOCKET_URL = 'https://tscapi.thescriptcraft.com';
 
 export const API_BASE_URL = Config.API_BASE_URL || DEFAULT_API_BASE_URL;
 export const SOCKET_URL = Config.SOCKET_URL || DEFAULT_SOCKET_URL;

@@ -147,8 +147,8 @@ Create or verify the `.env` file in the project root:
 
 ```env
 # Staging API URLs (Default for testing)
-API_BASE_URL=https://betatscapi.thescriptcraft.com/v1/user
-SOCKET_URL=https://betatscapi.thescriptcraft.com
+API_BASE_URL=https://tscapi.thescriptcraft.com/v1/user
+SOCKET_URL=https://tscapi.thescriptcraft.com
 
 # Production API URLs (Uncomment for production release)
 # API_BASE_URL=https://tscapi.thescriptcraft.com/v1/user

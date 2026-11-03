@@ -69,7 +69,7 @@ The root/auth/app stacks register these feature areas:
 ## 7. API & Backend
 
 - REST calls are grouped in `src/services/` by feature and share the Axios instance from `Instance/Instance.tsx`.
-- `API_BASE_URL` and `SOCKET_URL` are read through `react-native-config`. If missing, the current client falls back to the beta API host (`https://betatscapi.thescriptcraft.com`) with `/v1/user` for REST.
+- `API_BASE_URL` and `SOCKET_URL` are read through `react-native-config`. If missing, the current client falls back to the live API host (`https://tscapi.thescriptcraft.com`) with `/v1/user` for REST.
 - Axios timeout is 15 seconds. Requests attach the stored bearer access token. On a 401, the client attempts `/auth/refresh-token`, stores returned tokens, and retries once; failed refresh clears local tokens.
 - Backend feature groups visible in services include auth/profile, content/feed/posts, actions, books, contests, opportunities, chat, movies, search, notifications, tags/genres, bookmarks, and VisionX.
 - Socket.IO connects to `SOCKET_URL` and handles messages, presence, typing, read receipts, message edits/deletes, and socket notifications.

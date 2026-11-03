@@ -39,8 +39,8 @@ Create a `.env` file in the root directory:
 # ----------------------------------------------------
 # Staging Environment (Default for development)
 # ----------------------------------------------------
-API_BASE_URL=https://betatscapi.thescriptcraft.com/v1/user
-SOCKET_URL=https://betatscapi.thescriptcraft.com
+API_BASE_URL=https://tscapi.thescriptcraft.com/v1/user
+SOCKET_URL=https://tscapi.thescriptcraft.com
 
 # ----------------------------------------------------
 # Production Environment (Release builds)

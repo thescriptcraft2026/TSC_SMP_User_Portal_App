@@ -38,7 +38,7 @@ The app uses JWT (JSON Web Tokens) with a resilient double-token pattern (Access
 ### 1. Base URL Resolution & Fallbacks
 The network instance in `Instance/Instance.tsx` resolves the API URL with runtime fallbacks:
 - Primary: `Config.API_BASE_URL` (from `.env` via `react-native-config`).
-- Fallback: `DEFAULT_API_BASE_URL` (`https://betatscapi.thescriptcraft.com/v1/user`).
+- Fallback: `DEFAULT_API_BASE_URL` (`https://tscapi.thescriptcraft.com/v1/user`).
 - This safeguards Release builds against R8/ProGuard stripping or empty configuration values.
 
 ### 2. Token Injection
