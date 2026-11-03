@@ -16,7 +16,7 @@ cat << 'EOF' > ./ExportOptions.plist
 	<key>teamID</key>
 	<string>6B62X8D275</string>
 	<key>testFlightInternalTestingOnly</key>
-	<true/>
+	<false/>
 </dict>
 </plist>
 EOF
