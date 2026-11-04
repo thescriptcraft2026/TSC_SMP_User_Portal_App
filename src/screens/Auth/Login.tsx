@@ -781,6 +781,7 @@ const Login = ({ navigation, route }: any) => {
         onSaveInternational={saveInternationalMobile}
         onVerified={continueAfterMobileVerification}
         onError={showMobileVerificationError}
+        onClose={() => setShowMobileVerification(false)}
       />
     </SafeAreaView>
   );
