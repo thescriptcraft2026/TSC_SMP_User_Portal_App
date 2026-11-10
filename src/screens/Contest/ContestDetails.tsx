@@ -136,14 +136,26 @@ const ContestDetails = () => {
     }
 
     const contestType = String(
-      selectedContest?.contest_type || selectedContest?.contestType || selectedContest?.type || '',
+      selectedContest?.contest_type ||
+        selectedContest?.contestType ||
+        selectedContest?.contest_kind ||
+        selectedContest?.contestKind ||
+        selectedContest?.content_type ||
+        selectedContest?.contest_content_type ||
+        selectedContest?.type ||
+        '',
     ).toLowerCase();
+    const isBookContest =
+      contestType === 'book' ||
+      contestType.includes('book') ||
+      selectedContest?.is_book_contest === 1 ||
+      selectedContest?.is_book_contest === true ||
+      String(selectedContest?.is_book_contest).toLowerCase() === 'true' ||
+      String(selectedContest?.submission_type).toLowerCase() === 'book';
 
     navigation.navigate(
-      contestType.includes('book') || selectedContest?.is_book_contest === 1
-        ? 'SelectBooksForContest'
-        : 'ParticipateNow',
-      contestType.includes('book') || selectedContest?.is_book_contest === 1
+      isBookContest ? 'SelectBooksForContest' : 'ParticipateNow',
+      isBookContest
         ? { contest: selectedContest }
         : { contest_id: selectedContest },
     );

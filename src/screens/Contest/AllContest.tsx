@@ -391,7 +391,18 @@ const AllContest = () => {
                   status={getContestStatus(item?.start_date, item?.end_date)}
                   daysLeft={getDaysLeftFromNow(item?.end_date)}
                   contestType={
-                    String(item?.contest_type || item?.contestType || item?.type || '').toLowerCase().includes('book') || item?.is_book_contest === 1
+                    String(
+                      item?.contest_type ||
+                        item?.contestType ||
+                        item?.contest_kind ||
+                        item?.content_type ||
+                        item?.contest_content_type ||
+                        item?.type ||
+                        '',
+                    ).toLowerCase().includes('book') ||
+                    item?.is_book_contest === 1 ||
+                    item?.is_book_contest === true ||
+                    String(item?.submission_type).toLowerCase() === 'book'
                       ? 'book'
                       : undefined
                   }
