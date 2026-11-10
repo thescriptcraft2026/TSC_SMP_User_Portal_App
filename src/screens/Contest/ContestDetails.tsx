@@ -60,6 +60,7 @@ import {
   hasContestExpired,
   hasContestStarted,
 } from '../../utils/contest';
+import { LOCAL_BOOK_CONTEST_ID } from '../../data/localBookContest';
 
 const ContestDetails = () => {
   const navigation = useNavigation<any>();
@@ -111,6 +112,7 @@ const ContestDetails = () => {
   );
 
   const handleParticipate = () => {
+    const isLocalBookContest = selectedContest?.id === LOCAL_BOOK_CONTEST_ID;
     const userRoleIds = user?.roles?.map((role: any) => Number(role?.id)) || [];
 
     const contestRoleIds =
@@ -125,7 +127,7 @@ const ContestDetails = () => {
 
     console.log('Is Eligible:', isEligible);
 
-    if (!isEligible) {
+    if (!isEligible && !isLocalBookContest) {
       show({
         type: 'error',
         title: 'You are not eligible for contest',
@@ -133,9 +135,18 @@ const ContestDetails = () => {
       return;
     }
 
-    navigation.navigate('ParticipateNow', {
-      contest_id: selectedContest,
-    });
+    const contestType = String(
+      selectedContest?.contest_type || selectedContest?.contestType || selectedContest?.type || '',
+    ).toLowerCase();
+
+    navigation.navigate(
+      contestType.includes('book') || selectedContest?.is_book_contest === 1
+        ? 'SelectBooksForContest'
+        : 'ParticipateNow',
+      contestType.includes('book') || selectedContest?.is_book_contest === 1
+        ? { contest: selectedContest }
+        : { contest_id: selectedContest },
+    );
   };
 
   const contestStatus = useMemo(() => {

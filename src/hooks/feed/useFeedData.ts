@@ -34,6 +34,10 @@ export const mapContests = (data: any[]) =>
           status: getContestStatus(contest?.start_date, contest?.end_date),
 
           isWishlisted: contest?.isWishlisted === 1,
+          contestType:
+            String(contest?.contest_type || contest?.contestType || contest?.type || '').toLowerCase().includes('book') || contest?.is_book_contest === 1
+              ? 'book'
+              : undefined,
         },
       };
     });

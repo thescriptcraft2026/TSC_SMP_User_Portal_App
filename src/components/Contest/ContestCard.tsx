@@ -35,6 +35,7 @@ type Props = {
   onBookMark?: () => void;
   bookmarked?: boolean;
   daysLeft?: string;
+  contestType?: string;
 };
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -54,7 +55,8 @@ const ContestCard = ({
   status,
   onBookMark,
   bookmarked,
-  daysLeft
+  daysLeft,
+  contestType,
 }: Props) => {
   const isDark = true;
 
@@ -242,6 +244,12 @@ const ContestCard = ({
         </View>
       </View>
 
+      {contestType === 'book' && (
+        <View style={styles.bookTypeBadge}>
+          <Text style={styles.bookTypeText}>BOOK CONTEST</Text>
+        </View>
+      )}
+
       {/* ACTION BUTTONS */}
       <View style={styles.actionRow}>
         <TouchableOpacity
@@ -377,6 +385,23 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 9,
     fontFamily: Fonts.SemiBold,
+  },
+
+  bookTypeBadge: {
+    position: 'absolute',
+    bottom: 68,
+    left: 14,
+    backgroundColor: 'rgba(235,157,8,0.92)',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+
+  bookTypeText: {
+    color: '#09090d',
+    fontSize: 9,
+    fontFamily: Fonts.Bold,
+    letterSpacing: 0.4,
   },
 
   meta: {

@@ -56,6 +56,8 @@ import ViewMyOpportunitySubmisiions from './src/screens/Opportunity/ViewMyOpport
 import StaticScreen from './src/screens/NonLogin/StaticScreen';
 import Opportunity from './src/screens/Opportunity/Opportunity';
 import AllContest from './src/screens/Contest/AllContest';
+import SelectBooksForContest from './src/screens/Contest/SelectBooksForContest';
+import BookContestSubmissions from './src/screens/Contest/BookContestSubmissions';
 import OnlinePrefrence from './src/screens/Profile/OnlinePrefrence';
 import AddUserName from './src/screens/Auth/AddUserName';
 import Tutorial from './src/screens/Tutorial/Tutorial';
@@ -234,6 +236,8 @@ const AppStack = () => {
       />
 
       <Stack.Screen name="ContestDetails" component={ContestDetails} />
+      <Stack.Screen name="SelectBooksForContest" component={SelectBooksForContest} />
+      <Stack.Screen name="BookContestSubmissions" component={BookContestSubmissions} />
       <Stack.Screen name="ParticipateNow" component={ParticipateNow} />
       <Stack.Screen name="ParticipateDetails" component={ParticipateDetails} />
       <Stack.Screen name="ReviewSubmission" component={ReviewSubmission} />

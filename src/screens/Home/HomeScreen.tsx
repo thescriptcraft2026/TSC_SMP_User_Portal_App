@@ -72,6 +72,7 @@ import MovieCard from '../Movie/components/MovieCard';
 import { useFeedLike } from '../../hooks/feed/useFeedLike';
 import { useFeedBookmark } from '../../hooks/feed/useFeedBookmark';
 import { mapContests, useFeedData } from '../../hooks/feed/useFeedData';
+import { LOCAL_BOOK_CONTEST } from '../../data/localBookContest';
 import { useFeedInitialization } from '../../hooks/feed/useFeedInitialization';
 import { useFeedPagination } from '../../hooks/feed/useFeedPagination';
 import { tabBarScrollY } from '../../navigation/BottomTab';
@@ -315,7 +316,11 @@ export default function HomeScreen() {
 
   const finalContestData = useMemo(() => {
     if (!showMyOpps) {
-      return mapContests(contestList || []);
+      const remoteContests = contestList || [];
+      const contestsWithPrototype = remoteContests.some((item: any) => item?.id === LOCAL_BOOK_CONTEST.id)
+        ? remoteContests
+        : [LOCAL_BOOK_CONTEST, ...remoteContests];
+      return mapContests(contestsWithPrototype);
     }
 
     const seen = new Map();

@@ -13,7 +13,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { Fonts } from '../../constants/Fonts';
-import { themeColors } from '../../theme/colors';
 import PrimaryButton from '../../components/Buttons/PrimaryButton';
 import { useToast } from '../../components/Toast/ToastProvider';
 
@@ -22,7 +21,7 @@ const SuccessScreen = () => {
   const route = useRoute<any>();
   const { show } = useToast();
 
-  const { contestId, participantId, title } = route.params || {};
+  const { contestId, participantId, shareToken, title, bookContest, selectedBooks = [] } = route.params || {};
 
   const [copied, setCopied] = useState(false);
 
@@ -33,11 +32,15 @@ const SuccessScreen = () => {
       ? `https://www.thescriptcraft.com/contests/${contestId}`
       : 'https://www.thescriptcraft.com/contests';
 
+  const bookBundleUrl = bookContest && contestId && participantId
+    ? `https://www.thescriptcraft.com/contests/${contestId}/book-submissions/${shareToken || participantId}`
+    : shareUrl;
+
   const handleShare = async () => {
     try {
       await Share.share({
         title: title || 'The Script Craft Contest Entry',
-        message: shareUrl,
+        message: bookBundleUrl,
       });
     } catch (error) {
       console.log('Error sharing contest link:', error);
@@ -46,7 +49,7 @@ const SuccessScreen = () => {
 
   const handleCopy = () => {
     try {
-      Clipboard.setString(shareUrl);
+      Clipboard.setString(bookBundleUrl);
       setCopied(true);
       show({
         type: 'success',
@@ -63,6 +66,13 @@ const SuccessScreen = () => {
   };
 
   const viewSubmission = () => {
+    if (bookContest) {
+      navigation.replace('BookContestSubmissions', {
+        contestId,
+        selectedBooks,
+      });
+      return;
+    }
     if (participantId) {
       navigation.replace('ParticipateDetails', {
         id: participantId,
@@ -100,10 +110,10 @@ const SuccessScreen = () => {
           <Text style={styles.emoji}>🎉</Text>
         </View>
 
-        <Text style={styles.title}>Submission Successful</Text>
+        <Text style={styles.title}>{bookContest ? 'Books Submitted' : 'Submission Successful'}</Text>
 
         <Text style={styles.subtitle}>
-          Your entry has been submitted successfully.
+          {bookContest ? `${selectedBooks.length} book${selectedBooks.length === 1 ? '' : 's'} submitted to the contest.` : 'Your entry has been submitted successfully.'}
         </Text>
 
         {/* Entry Title if available */}
@@ -113,6 +123,13 @@ const SuccessScreen = () => {
             <Text style={styles.entryTitle} numberOfLines={2}>
               {title}
             </Text>
+          </View>
+        )}
+
+        {bookContest && selectedBooks.length > 0 && (
+          <View style={styles.entryCard}>
+            <Text style={styles.entryLabel}>SUBMITTED BOOKS</Text>
+            {selectedBooks.map((book: any) => <Text key={book.id} style={styles.entryTitle} numberOfLines={1}>• {book.title}</Text>)}
           </View>
         )}
 
@@ -130,7 +147,7 @@ const SuccessScreen = () => {
               numberOfLines={1}
               ellipsizeMode="middle"
             >
-              {shareUrl}
+              {bookBundleUrl}
             </Text>
 
             <TouchableOpacity
