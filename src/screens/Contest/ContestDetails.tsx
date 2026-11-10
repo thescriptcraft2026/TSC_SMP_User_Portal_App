@@ -113,6 +113,29 @@ const ContestDetails = () => {
 
   const handleParticipate = () => {
     const isLocalBookContest = selectedContest?.id === LOCAL_BOOK_CONTEST_ID;
+    const contestTypeValues = [
+      selectedContest?.contest_type,
+      selectedContest?.contestType,
+      selectedContest?.contest_kind,
+      selectedContest?.contestKind,
+      selectedContest?.content_type,
+      selectedContest?.contest_content_type,
+      selectedContest?.type,
+      selectedContest?.submission_type,
+    ].map(value => String(value ?? '').toLowerCase());
+    const isBookContest =
+      isLocalBookContest ||
+      contestTypeValues.some(value => value === 'book' || value.includes('book')) ||
+      Number(selectedContest?.book_submission_limit || selectedContest?.max_books || selectedContest?.selection_limit) > 0 ||
+      selectedContest?.is_book_contest === 1 ||
+      selectedContest?.is_book_contest === true;
+
+    // Book contests do not use role eligibility or the regular entry form.
+    if (isBookContest) {
+      navigation.navigate('SelectBooksForContest', { contest: selectedContest });
+      return;
+    }
+
     const userRoleIds = user?.roles?.map((role: any) => Number(role?.id)) || [];
 
     const contestRoleIds =
@@ -135,30 +158,7 @@ const ContestDetails = () => {
       return;
     }
 
-    const contestType = String(
-      selectedContest?.contest_type ||
-        selectedContest?.contestType ||
-        selectedContest?.contest_kind ||
-        selectedContest?.contestKind ||
-        selectedContest?.content_type ||
-        selectedContest?.contest_content_type ||
-        selectedContest?.type ||
-        '',
-    ).toLowerCase();
-    const isBookContest =
-      contestType === 'book' ||
-      contestType.includes('book') ||
-      selectedContest?.is_book_contest === 1 ||
-      selectedContest?.is_book_contest === true ||
-      String(selectedContest?.is_book_contest).toLowerCase() === 'true' ||
-      String(selectedContest?.submission_type).toLowerCase() === 'book';
-
-    navigation.navigate(
-      isBookContest ? 'SelectBooksForContest' : 'ParticipateNow',
-      isBookContest
-        ? { contest: selectedContest }
-        : { contest_id: selectedContest },
-    );
+    navigation.navigate('ParticipateNow', { contest_id: selectedContest });
   };
 
   const contestStatus = useMemo(() => {
