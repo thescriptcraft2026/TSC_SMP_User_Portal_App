@@ -107,6 +107,7 @@ const BookContestSubmissions = () => {
             <View style={styles.hero}>
               <View style={styles.pill}><Ionicons name="book-outline" size={14} color={themeColors.primary} /><Text style={styles.pillText}>BOOK CONTEST</Text></View>
               <Text style={styles.title}>{contestTitle}</Text>
+              <Text style={styles.debugId}>Contest ID: {contestId || 'MISSING'}</Text>
               <Text style={styles.subtitle}>Browse entries, support writers, and rate the books you love.</Text>
               <View style={styles.stats}><Text style={styles.stat}><Text style={styles.statStrong}>{submissions.length}</Text> submissions</Text><Text style={styles.stat}><Text style={styles.statStrong}>{averageRating}</Text> average rating</Text></View>
             </View>
@@ -151,6 +152,7 @@ const styles = StyleSheet.create({
   pill: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderColor: '#765719', borderRadius: 20, paddingHorizontal: 9, paddingVertical: 5 },
   pillText: { color: themeColors.primary, fontFamily: Fonts.Bold, fontSize: 10, letterSpacing: 0.8 },
   title: { color: '#fff', fontFamily: Fonts.Bold, fontSize: 21, marginTop: 12 },
+  debugId: { color: '#8C8C95', fontFamily: Fonts.Regular, fontSize: 11, marginTop: 4 },
   subtitle: { color: '#A8A8B0', fontFamily: Fonts.Regular, fontSize: 13, lineHeight: 19, marginTop: 6 },
   stats: { flexDirection: 'row', gap: 22, marginTop: 16 },
   stat: { color: '#A8A8B0', fontFamily: Fonts.Regular, fontSize: 12 },
