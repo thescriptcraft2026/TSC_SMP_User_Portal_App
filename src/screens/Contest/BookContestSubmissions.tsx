@@ -59,6 +59,12 @@ const BookContestSubmissions = () => {
     return source.filter((book: any) => String(book.title || '').toLowerCase().includes(search.toLowerCase()));
   }, [route.params?.selectedBooks, remoteBooks, search, isLocalDemo]);
 
+  React.useEffect(() => {
+    if (!submissions.length) return;
+    setLiked(submissions.filter((book: any) => book.isLiked).map((book: any) => String(book.id)));
+    setRatings(Object.fromEntries(submissions.filter((book: any) => book.contest_rating).map((book: any) => [String(book.id), Number(book.contest_rating)])));
+  }, [submissions]);
+
   const averageRating = useMemo(() => {
     const averages = submissions.map((book: any) => Number(book.contest_rating_average || 0)).filter(Boolean);
     if (!averages.length) return '0.0';
