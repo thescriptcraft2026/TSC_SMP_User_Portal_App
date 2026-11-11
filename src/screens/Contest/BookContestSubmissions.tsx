@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   FlatList,
   StyleSheet,
@@ -8,7 +8,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import FastImage from 'react-native-fast-image';
 
@@ -25,30 +25,53 @@ const BookContestSubmissions = () => {
   const [liked, setLiked] = useState<string[]>([]);
   const [ratings, setRatings] = useState<Record<string, number>>({});
   const [remoteBooks, setRemoteBooks] = useState<any[] | null>(null);
-  const contestId = route.params?.contestId;
+  const contestId = route.params?.contestId || route.params?.id || route.params?.contest?.id;
+  const contestTitle = route.params?.contestTitle || LOCAL_BOOK_CONTEST.title;
+  const isLocalDemo = contestId === LOCAL_BOOK_CONTEST.id || (!contestId && !route.params?.contestTitle);
 
-  useEffect(() => {
-    if (!contestId || contestId === LOCAL_BOOK_CONTEST.id) return;
-    api.get(`/contest/book-submission/${contestId}`)
-      .then(response => {
-        const bundles = response?.data?.data?.submissions || [];
-        setRemoteBooks(bundles.flatMap((bundle: any) => (bundle.books || []).map((book: any) => ({ ...book, submissionUser: bundle.user }))));
-      })
-      .catch(() => setRemoteBooks([]));
-  }, [contestId]);
+  useFocusEffect(React.useCallback(() => {
+    let active = true;
+    if (isLocalDemo) return undefined;
+    setRemoteBooks(null);
+    const load = async () => {
+      try {
+        const response = await api.get(`/contest/book-submission/${contestId}?_=${Date.now()}`);
+        const payload = response?.data?.data;
+        const bundles = Array.isArray(payload) ? payload : (payload?.submissions || []);
+        const books = bundles.flatMap((bundle: any) => (bundle.books || []).map((book: any) => ({ ...book, submissionUser: bundle.user })));
+        if (active) setRemoteBooks(books);
+      } catch {
+        if (active) setRemoteBooks([]);
+      }
+    };
+    load();
+    return () => { active = false; };
+  }, [contestId, isLocalDemo]));
   const submissions = useMemo(() => {
     const selectedBooks = route.params?.selectedBooks || [];
-    const source = remoteBooks?.length
-      ? remoteBooks
-      : selectedBooks.length
-      ? selectedBooks
-      : [
+    const source = isLocalDemo
+      ? (selectedBooks.length ? selectedBooks : [
           { id: 'demo-1', title: 'A Story Worth Telling', user: { name: 'You' }, image: '' },
           { id: 'demo-2', title: 'The Last Draft', user: { name: 'Community Author' }, image: '' },
           { id: 'demo-3', title: 'Letters from Home', user: { name: 'Featured Writer' }, image: '' },
-        ];
+        ])
+      : (remoteBooks && remoteBooks.length ? remoteBooks : selectedBooks);
     return source.filter((book: any) => String(book.title || '').toLowerCase().includes(search.toLowerCase()));
-  }, [route.params?.selectedBooks, remoteBooks, search]);
+  }, [route.params?.selectedBooks, remoteBooks, search, isLocalDemo]);
+
+  const averageRating = useMemo(() => {
+    const ratedBooks = submissions.filter((book: any) => Number(book.ratings_count || 0) > 0);
+    if (!ratedBooks.length) return '0.0';
+    const total = ratedBooks.reduce((sum: number, book: any) => sum + (Number(book.all_ratings || 0) / Number(book.ratings_count || 1)), 0);
+    return (total / ratedBooks.length).toFixed(1);
+  }, [submissions]);
+
+  const getBookImage = (book: any) => {
+    const image = book?.image || book?.cover_image || book?.coverImage || book?.book?.image;
+    if (!image || typeof image !== 'string') return null;
+    if (image.startsWith('http://') || image.startsWith('https://')) return image;
+    return `https://dvj1oyyzss68w.cloudfront.net/${image.replace(/^\/+/, '')}`;
+  };
 
   const toggleLike = (id: string) => setLiked(current => current.includes(id) ? current.filter(item => item !== id) : [...current, id]);
 
@@ -83,9 +106,9 @@ const BookContestSubmissions = () => {
           <View>
             <View style={styles.hero}>
               <View style={styles.pill}><Ionicons name="book-outline" size={14} color={themeColors.primary} /><Text style={styles.pillText}>BOOK CONTEST</Text></View>
-              <Text style={styles.title}>{LOCAL_BOOK_CONTEST.title}</Text>
+              <Text style={styles.title}>{contestTitle}</Text>
               <Text style={styles.subtitle}>Browse entries, support writers, and rate the books you love.</Text>
-              <View style={styles.stats}><Text style={styles.stat}><Text style={styles.statStrong}>{submissions.length}</Text> submissions</Text><Text style={styles.stat}><Text style={styles.statStrong}>4.8</Text> average rating</Text></View>
+              <View style={styles.stats}><Text style={styles.stat}><Text style={styles.statStrong}>{submissions.length}</Text> submissions</Text><Text style={styles.stat}><Text style={styles.statStrong}>{averageRating}</Text> average rating</Text></View>
             </View>
             <View style={styles.searchBox}><Ionicons name="search-outline" size={19} color="#8C8C95" /><TextInput value={search} onChangeText={setSearch} placeholder="Search submissions" placeholderTextColor="#777780" style={styles.searchInput} /></View>
             <Text style={styles.sectionTitle}>Community submissions</Text>
@@ -97,7 +120,12 @@ const BookContestSubmissions = () => {
           const rating = ratings[id] || 0;
           return (
             <View style={styles.card}>
-              <FastImage source={item.image ? { uri: item.image } : require('../../assets/images/book-1.png')} style={styles.cover} resizeMode="cover" />
+              <FastImage
+                source={getBookImage(item) ? { uri: getBookImage(item) as string } : require('../../assets/images/book-1.png')}
+                style={styles.cover}
+                resizeMode={FastImage.resizeMode.cover}
+                onError={() => undefined}
+              />
               <View style={styles.cardBody}>
                 <Text style={styles.bookTitle} numberOfLines={2}>{item.title}</Text>
                 <Text style={styles.author}>{item.user?.name || item.author || 'Author'}</Text>

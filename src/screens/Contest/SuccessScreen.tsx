@@ -69,6 +69,8 @@ const SuccessScreen = () => {
     if (bookContest) {
       navigation.replace('BookContestSubmissions', {
         contestId,
+        id: contestId,
+        contestTitle: title,
         selectedBooks,
       });
       return;

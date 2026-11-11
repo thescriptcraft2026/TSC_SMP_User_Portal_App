@@ -187,6 +187,30 @@ const ContestDetails = () => {
   const extraCount = participantsData.length - 3;
 
   const handleViewSubmissions = async () => {
+    const contestTypeValues = [
+      selectedContest?.contest_type,
+      selectedContest?.contestType,
+      selectedContest?.content_type,
+      selectedContest?.contest_content_type,
+      selectedContest?.type,
+      selectedContest?.submission_type,
+    ].map(value => String(value ?? '').toLowerCase());
+    const isBookContest =
+      contestTypeValues.some(value => value === 'book' || value.includes('book')) ||
+      Number(selectedContest?.book_submission_limit || selectedContest?.max_books || selectedContest?.selection_limit) > 0 ||
+      selectedContest?.is_book_contest === 1 ||
+      selectedContest?.is_book_contest === true;
+
+    if (isBookContest) {
+      navigation.navigate('BookContestSubmissions', {
+        contestId: selectedContest?.id,
+        id: selectedContest?.id,
+        contest: selectedContest,
+        contestTitle: selectedContest?.title,
+      });
+      return;
+    }
+
     try {
       const res = await dispatch(
         getParticipantsByContestId(selectedContest?.id),
