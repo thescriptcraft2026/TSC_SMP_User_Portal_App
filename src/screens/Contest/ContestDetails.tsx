@@ -200,11 +200,12 @@ const ContestDetails = () => {
       Number(selectedContest?.book_submission_limit || selectedContest?.max_books || selectedContest?.selection_limit) > 0 ||
       selectedContest?.is_book_contest === 1 ||
       selectedContest?.is_book_contest === true;
+    const effectiveContestId = selectedContest?.id || contestId;
 
     if (isBookContest) {
       navigation.navigate('BookContestSubmissions', {
-        contestId: selectedContest?.id,
-        id: selectedContest?.id,
+        contestId: effectiveContestId,
+        id: effectiveContestId,
         contest: selectedContest,
         contestTitle: selectedContest?.title,
       });
