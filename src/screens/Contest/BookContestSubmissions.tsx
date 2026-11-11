@@ -60,10 +60,9 @@ const BookContestSubmissions = () => {
   }, [route.params?.selectedBooks, remoteBooks, search, isLocalDemo]);
 
   const averageRating = useMemo(() => {
-    const ratedBooks = submissions.filter((book: any) => Number(book.ratings_count || 0) > 0);
-    if (!ratedBooks.length) return '0.0';
-    const total = ratedBooks.reduce((sum: number, book: any) => sum + (Number(book.all_ratings || 0) / Number(book.ratings_count || 1)), 0);
-    return (total / ratedBooks.length).toFixed(1);
+    const averages = submissions.map((book: any) => Number(book.contest_rating_average || 0)).filter(Boolean);
+    if (!averages.length) return '0.0';
+    return (averages.reduce((sum: number, value: number) => sum + value, 0) / averages.length).toFixed(1);
   }, [submissions]);
 
   const getBookImage = (book: any) => {
@@ -87,7 +86,7 @@ const BookContestSubmissions = () => {
 
   const handleRating = async (id: string, value: number) => {
     try {
-      await api.post(`/actions/rate/${id}`, { rating: value });
+      await api.post(`/actions/rate/${id}`, { rating: value, contest_id: contestId });
       setRatings(current => ({ ...current, [id]: value }));
     } catch {
       // Keep the previous rating when the action cannot be persisted.
@@ -121,12 +120,17 @@ const BookContestSubmissions = () => {
           const rating = ratings[id] || 0;
           return (
             <View style={styles.card}>
-              <FastImage
-                source={getBookImage(item) ? { uri: getBookImage(item) as string } : require('../../assets/images/book-1.png')}
-                style={styles.cover}
-                resizeMode={FastImage.resizeMode.cover}
-                onError={() => undefined}
-              />
+              <View style={styles.coverColumn}>
+                <FastImage
+                  source={getBookImage(item) ? { uri: getBookImage(item) as string } : require('../../assets/images/book-1.png')}
+                  style={styles.cover}
+                  resizeMode={FastImage.resizeMode.cover}
+                  onError={() => undefined}
+                />
+                <Text style={styles.debugImageUrl} numberOfLines={4}>
+                  Image URL: {getBookImage(item) || 'MISSING'}
+                </Text>
+              </View>
               <View style={styles.cardBody}>
                 <Text style={styles.bookTitle} numberOfLines={2}>{item.title}</Text>
                 <Text style={styles.author}>{item.user?.name || item.author || 'Author'}</Text>
@@ -162,6 +166,8 @@ const styles = StyleSheet.create({
   sectionTitle: { color: '#fff', fontFamily: Fonts.Bold, fontSize: 16, marginBottom: 10 },
   card: { flexDirection: 'row', backgroundColor: '#17171C', borderRadius: 16, padding: 9, marginBottom: 10 },
   cover: { width: 92, height: 125, borderRadius: 10, backgroundColor: '#27272D' },
+  coverColumn: { width: 92 },
+  debugImageUrl: { color: '#777780', fontFamily: Fonts.Regular, fontSize: 8, lineHeight: 10, marginTop: 4 },
   cardBody: { flex: 1, paddingLeft: 12, paddingVertical: 3 },
   bookTitle: { color: '#fff', fontFamily: Fonts.Bold, fontSize: 16, lineHeight: 20 },
   author: { color: '#9A9AA3', fontFamily: Fonts.Regular, fontSize: 12, marginTop: 5 },
