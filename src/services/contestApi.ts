@@ -1,5 +1,4 @@
 import api from '../../Instance/Instance';
-import { LOCAL_BOOK_CONTEST, LOCAL_BOOK_CONTEST_ID } from '../data/localBookContest';
 
 export const getAllContestApi = async (
   page = 1,
@@ -32,9 +31,6 @@ export const getAllContestApi = async (
 
 // ✅ GET BY ID
 export const getContestById = async (id: string) => {
-  if (id === LOCAL_BOOK_CONTEST_ID) {
-    return LOCAL_BOOK_CONTEST;
-  }
   const res = await api.get(`/public/contest/${id}`);
   return res?.data?.data;
 };

@@ -15,7 +15,6 @@ import FastImage from 'react-native-fast-image';
 import AuthHeader from '../../components/Header/AuthHeader';
 import { themeColors } from '../../theme/colors';
 import { Fonts } from '../../constants/Fonts';
-import { LOCAL_BOOK_CONTEST } from '../../data/localBookContest';
 import api from '../../../Instance/Instance';
 
 const BookContestSubmissions = () => {
@@ -26,12 +25,10 @@ const BookContestSubmissions = () => {
   const [ratings, setRatings] = useState<Record<string, number>>({});
   const [remoteBooks, setRemoteBooks] = useState<any[] | null>(null);
   const contestId = route.params?.contestId || route.params?.id || route.params?.contest?.id;
-  const contestTitle = route.params?.contestTitle || LOCAL_BOOK_CONTEST.title;
-  const isLocalDemo = contestId === LOCAL_BOOK_CONTEST.id || (!contestId && !route.params?.contestTitle);
+  const contestTitle = route.params?.contestTitle || 'Book Contest';
 
   useFocusEffect(React.useCallback(() => {
     let active = true;
-    if (isLocalDemo) return undefined;
     setRemoteBooks(null);
     const load = async () => {
       try {
@@ -46,18 +43,12 @@ const BookContestSubmissions = () => {
     };
     load();
     return () => { active = false; };
-  }, [contestId, isLocalDemo]));
+  }, [contestId]));
   const submissions = useMemo(() => {
     const selectedBooks = route.params?.selectedBooks || [];
-    const source = isLocalDemo
-      ? (selectedBooks.length ? selectedBooks : [
-          { id: 'demo-1', title: 'A Story Worth Telling', user: { name: 'You' }, image: '' },
-          { id: 'demo-2', title: 'The Last Draft', user: { name: 'Community Author' }, image: '' },
-          { id: 'demo-3', title: 'Letters from Home', user: { name: 'Featured Writer' }, image: '' },
-        ])
-      : (remoteBooks && remoteBooks.length ? remoteBooks : selectedBooks);
+    const source = remoteBooks && remoteBooks.length ? remoteBooks : selectedBooks;
     return source.filter((book: any) => String(book.title || '').toLowerCase().includes(search.toLowerCase()));
-  }, [route.params?.selectedBooks, remoteBooks, search, isLocalDemo]);
+  }, [route.params?.selectedBooks, remoteBooks, search]);
 
   React.useEffect(() => {
     if (!submissions.length) return;
@@ -91,11 +82,13 @@ const BookContestSubmissions = () => {
   };
 
   const handleRating = async (id: string, value: number) => {
+    const previousRating = ratings[id] || 0;
+    setRatings(current => ({ ...current, [id]: value }));
     try {
       await api.post(`/actions/rate/${id}`, { rating: value, contest_id: contestId });
-      setRatings(current => ({ ...current, [id]: value }));
     } catch {
-      // Keep the previous rating when the action cannot be persisted.
+      setRatings(current => ({ ...current, [id]: previousRating }));
+      show({ type: 'error', title: 'Unable to save contest rating.' });
     }
   };
 
@@ -112,7 +105,6 @@ const BookContestSubmissions = () => {
             <View style={styles.hero}>
               <View style={styles.pill}><Ionicons name="book-outline" size={14} color={themeColors.primary} /><Text style={styles.pillText}>BOOK CONTEST</Text></View>
               <Text style={styles.title}>{contestTitle}</Text>
-              <Text style={styles.debugId}>Contest ID: {contestId || 'MISSING'}</Text>
               <Text style={styles.subtitle}>Browse entries, support writers, and rate the books you love.</Text>
               <View style={styles.stats}><Text style={styles.stat}><Text style={styles.statStrong}>{submissions.length}</Text> submissions</Text><Text style={styles.stat}><Text style={styles.statStrong}>{averageRating}</Text> average rating</Text></View>
             </View>
@@ -133,9 +125,6 @@ const BookContestSubmissions = () => {
                   resizeMode={FastImage.resizeMode.cover}
                   onError={() => undefined}
                 />
-                <Text style={styles.debugImageUrl} numberOfLines={4}>
-                  Image URL: {getBookImage(item) || 'MISSING'}
-                </Text>
               </View>
               <View style={styles.cardBody}>
                 <Text style={styles.bookTitle} numberOfLines={2}>{item.title}</Text>
@@ -162,7 +151,6 @@ const styles = StyleSheet.create({
   pill: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderColor: '#765719', borderRadius: 20, paddingHorizontal: 9, paddingVertical: 5 },
   pillText: { color: themeColors.primary, fontFamily: Fonts.Bold, fontSize: 10, letterSpacing: 0.8 },
   title: { color: '#fff', fontFamily: Fonts.Bold, fontSize: 21, marginTop: 12 },
-  debugId: { color: '#8C8C95', fontFamily: Fonts.Regular, fontSize: 11, marginTop: 4 },
   subtitle: { color: '#A8A8B0', fontFamily: Fonts.Regular, fontSize: 13, lineHeight: 19, marginTop: 6 },
   stats: { flexDirection: 'row', gap: 22, marginTop: 16 },
   stat: { color: '#A8A8B0', fontFamily: Fonts.Regular, fontSize: 12 },
@@ -173,7 +161,6 @@ const styles = StyleSheet.create({
   card: { flexDirection: 'row', backgroundColor: '#17171C', borderRadius: 16, padding: 9, marginBottom: 10 },
   cover: { width: 92, height: 125, borderRadius: 10, backgroundColor: '#27272D' },
   coverColumn: { width: 92 },
-  debugImageUrl: { color: '#777780', fontFamily: Fonts.Regular, fontSize: 8, lineHeight: 10, marginTop: 4 },
   cardBody: { flex: 1, paddingLeft: 12, paddingVertical: 3 },
   bookTitle: { color: '#fff', fontFamily: Fonts.Bold, fontSize: 16, lineHeight: 20 },
   author: { color: '#9A9AA3', fontFamily: Fonts.Regular, fontSize: 12, marginTop: 5 },

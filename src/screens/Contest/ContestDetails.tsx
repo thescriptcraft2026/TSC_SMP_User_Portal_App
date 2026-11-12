@@ -60,7 +60,6 @@ import {
   hasContestExpired,
   hasContestStarted,
 } from '../../utils/contest';
-import { LOCAL_BOOK_CONTEST_ID } from '../../data/localBookContest';
 
 const ContestDetails = () => {
   const navigation = useNavigation<any>();
@@ -112,7 +111,6 @@ const ContestDetails = () => {
   );
 
   const handleParticipate = () => {
-    const isLocalBookContest = selectedContest?.id === LOCAL_BOOK_CONTEST_ID;
     const contestTypeValues = [
       selectedContest?.contest_type,
       selectedContest?.contestType,
@@ -124,7 +122,6 @@ const ContestDetails = () => {
       selectedContest?.submission_type,
     ].map(value => String(value ?? '').toLowerCase());
     const isBookContest =
-      isLocalBookContest ||
       contestTypeValues.some(value => value === 'book' || value.includes('book')) ||
       Number(selectedContest?.book_submission_limit || selectedContest?.max_books || selectedContest?.selection_limit) > 0 ||
       selectedContest?.is_book_contest === 1 ||
@@ -150,7 +147,7 @@ const ContestDetails = () => {
 
     console.log('Is Eligible:', isEligible);
 
-    if (!isEligible && !isLocalBookContest) {
+    if (!isEligible) {
       show({
         type: 'error',
         title: 'You are not eligible for contest',
