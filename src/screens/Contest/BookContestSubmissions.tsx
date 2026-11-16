@@ -16,6 +16,7 @@ import AuthHeader from '../../components/Header/AuthHeader';
 import { themeColors } from '../../theme/colors';
 import { Fonts } from '../../constants/Fonts';
 import api from '../../../Instance/Instance';
+import { useToast } from '../../components/Toast/ToastProvider';
 
 const BookContestSubmissions = () => {
   const navigation = useNavigation<any>();
@@ -24,6 +25,7 @@ const BookContestSubmissions = () => {
   const [liked, setLiked] = useState<string[]>([]);
   const [ratings, setRatings] = useState<Record<string, number>>({});
   const [remoteBooks, setRemoteBooks] = useState<any[] | null>(null);
+  const { show } = useToast();
   const contestId = route.params?.contestId || route.params?.id || route.params?.contest?.id;
   const contestTitle = route.params?.contestTitle || 'Book Contest';
 
@@ -35,8 +37,11 @@ const BookContestSubmissions = () => {
         const response = await api.get(`/contest/book-submission/${contestId}?_=${Date.now()}`);
         const payload = response?.data?.data;
         const bundles = Array.isArray(payload) ? payload : (payload?.submissions || []);
-        const books = bundles.flatMap((bundle: any) => (bundle.books || []).map((book: any) => ({ ...book, submissionUser: bundle.user })));
-        if (active) setRemoteBooks(books);
+        const entries = bundles.flatMap((bundle: any) => [
+          ...(bundle.books || []).map((book: any) => ({ ...book, content_type: 'book', submissionUser: bundle.user })),
+          ...(bundle.synopses || []).map((synopsis: any) => ({ ...synopsis, content_type: 'synopsis', submissionUser: bundle.user })),
+        ]);
+        if (active) setRemoteBooks(entries);
       } catch {
         if (active) setRemoteBooks([]);
       }
@@ -46,9 +51,11 @@ const BookContestSubmissions = () => {
   }, [contestId]));
   const submissions = useMemo(() => {
     const selectedBooks = route.params?.selectedBooks || [];
-    const source = remoteBooks && remoteBooks.length ? remoteBooks : selectedBooks;
+    const selectedSynopses = route.params?.selectedSynopses || [];
+    const fallback = [...selectedBooks.map((item: any) => ({ ...item, content_type: 'book' })), ...selectedSynopses.map((item: any) => ({ ...item, content_type: 'synopsis' }))];
+    const source = remoteBooks && remoteBooks.length ? remoteBooks : fallback;
     return source.filter((book: any) => String(book.title || '').toLowerCase().includes(search.toLowerCase()));
-  }, [route.params?.selectedBooks, remoteBooks, search]);
+  }, [route.params?.selectedBooks, route.params?.selectedSynopses, remoteBooks, search]);
 
   React.useEffect(() => {
     if (!submissions.length) return;
@@ -105,7 +112,7 @@ const BookContestSubmissions = () => {
             <View style={styles.hero}>
               <View style={styles.pill}><Ionicons name="book-outline" size={14} color={themeColors.primary} /><Text style={styles.pillText}>BOOK CONTEST</Text></View>
               <Text style={styles.title}>{contestTitle}</Text>
-              <Text style={styles.subtitle}>Browse entries, support writers, and rate the books you love.</Text>
+              <Text style={styles.subtitle}>Browse entries, support writers, and rate the books and synopses you love.</Text>
               <View style={styles.stats}><Text style={styles.stat}><Text style={styles.statStrong}>{submissions.length}</Text> submissions</Text><Text style={styles.stat}><Text style={styles.statStrong}>{averageRating}</Text> average rating</Text></View>
             </View>
             <View style={styles.searchBox}><Ionicons name="search-outline" size={19} color="#8C8C95" /><TextInput value={search} onChangeText={setSearch} placeholder="Search submissions" placeholderTextColor="#777780" style={styles.searchInput} /></View>
@@ -127,6 +134,7 @@ const BookContestSubmissions = () => {
                 />
               </View>
               <View style={styles.cardBody}>
+                <Text style={styles.contentType}>{item.content_type === 'synopsis' ? 'SYNOPSIS' : 'BOOK'}</Text>
                 <Text style={styles.bookTitle} numberOfLines={2}>{item.title}</Text>
                 <Text style={styles.author}>{item.user?.name || item.author || 'Author'}</Text>
                 <View style={styles.actionRow}>
@@ -163,6 +171,7 @@ const styles = StyleSheet.create({
   coverColumn: { width: 92 },
   cardBody: { flex: 1, paddingLeft: 12, paddingVertical: 3 },
   bookTitle: { color: '#fff', fontFamily: Fonts.Bold, fontSize: 16, lineHeight: 20 },
+  contentType: { color: themeColors.primary, fontFamily: Fonts.Bold, fontSize: 10, letterSpacing: 1, marginBottom: 4 },
   author: { color: '#9A9AA3', fontFamily: Fonts.Regular, fontSize: 12, marginTop: 5 },
   actionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 14 },
   action: { flexDirection: 'row', alignItems: 'center', gap: 5 },

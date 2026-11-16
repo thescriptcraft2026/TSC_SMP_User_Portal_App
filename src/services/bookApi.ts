@@ -6,10 +6,12 @@ export const getAllBooks = async (
   sort_by = 'recent',
   search = '',
   genre_id = '',
+  user_id = '',
+  limit = 100,
 ) => {
   const params: any = {
     page,
-    limit: 10,
+    limit,
     type,
     sort_by,
   };
@@ -21,6 +23,10 @@ export const getAllBooks = async (
 
   if (genre_id) {
     params.genre_id = genre_id;
+  }
+
+  if (user_id) {
+    params.user_id = user_id;
   }
 
   const res = await api.get(`/content`, {
