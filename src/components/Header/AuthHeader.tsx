@@ -77,7 +77,7 @@ interface AuthHeaderProps {
   setGenre?: (value: string) => void;
   onGenreChange?: (value: string) => void;
 
-  dropdownType?: 'genre' | 'role' | 'submissionSort';
+  dropdownType?: 'genre' | 'category' | 'role' | 'submissionSort';
   type?:any;
 
   showLogout?: boolean;
@@ -187,7 +187,12 @@ const AuthHeader: React.FC<AuthHeaderProps> = ({
         return;
       }
 
-      const endpoint = dropdownType === 'role' ? '/roles' : '/genre';
+      const endpoint =
+        dropdownType === 'role'
+          ? '/roles'
+          : dropdownType === 'category'
+            ? '/public/creator-categories'
+            : '/genre';
 
       const res = await api.get(endpoint);
 
@@ -461,6 +466,8 @@ const AuthHeader: React.FC<AuthHeaderProps> = ({
               label={
                 dropdownType === 'role'
                   ? 'All Roles'
+                  : dropdownType === 'category'
+                    ? 'All Categories'
                   : dropdownType === 'submissionSort'
                     ? 'Sort By'
                     : 'All Genres'

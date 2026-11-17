@@ -42,6 +42,11 @@ export const getBookById = async (id: string) => {
   return res?.data?.data;
 };
 
+export const getMyBookContestSubmission = async (contestId: string | number) => {
+  const res = await api.get(`/contest/book-submission/${contestId}/mine`);
+  return res?.data?.data;
+};
+
 // ✅ CREATE
 export const createBookApi = async (data: any) => {
   const res = await api.post('/content', data, {

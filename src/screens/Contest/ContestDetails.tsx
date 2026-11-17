@@ -60,6 +60,7 @@ import {
   hasContestExpired,
   hasContestStarted,
 } from '../../utils/contest';
+import { getMyBookContestSubmission } from '../../services/bookApi';
 
 const ContestDetails = () => {
   const navigation = useNavigation<any>();
@@ -95,6 +96,7 @@ const ContestDetails = () => {
   } = useSelector((state: any) => state.contest);
 
   const user = useSelector((state: any) => state.auth?.user);
+  const [hasBookSubmission, setHasBookSubmission] = useState(false);
 
   const isParticipated = contestStatusData?.isParticipated ?? false;
   const isWishlisted = contestStatusData?.isWishlisted ?? false;
@@ -102,16 +104,8 @@ const ContestDetails = () => {
   const submissionLimitType = selectedContest?.submission_limit_type; // "single" | "multiple"
   const isSingleLimit = submissionLimitType === 'single';
 
-  // Only block the button when it's a single-submission contest AND the user already participated
-  const blockParticipation = isSingleLimit && isParticipated;
-
-  const backgroundColor = useMemo(
-    () => (isDark ? themeColors.black : themeColors.appBackground),
-    [isDark],
-  );
-
-  const handleParticipate = () => {
-    const contestTypeValues = [
+  const isBookContest = useMemo(() => {
+    const values = [
       selectedContest?.contest_type,
       selectedContest?.contestType,
       selectedContest?.contest_kind,
@@ -121,11 +115,34 @@ const ContestDetails = () => {
       selectedContest?.type,
       selectedContest?.submission_type,
     ].map(value => String(value ?? '').toLowerCase());
-    const isBookContest =
-      contestTypeValues.some(value => value === 'book' || value.includes('book')) ||
-      Number(selectedContest?.book_submission_limit || selectedContest?.max_books || selectedContest?.selection_limit) > 0 ||
+
+    return (
+      values.some(value => value === 'book' || value.includes('book')) ||
+      Number(
+        selectedContest?.book_submission_limit ||
+          selectedContest?.max_books ||
+          selectedContest?.selection_limit,
+      ) > 0 ||
       selectedContest?.is_book_contest === 1 ||
-      selectedContest?.is_book_contest === true;
+      selectedContest?.is_book_contest === true
+    );
+  }, [selectedContest]);
+
+  // Only block the button when it's a single-submission contest AND the user already participated
+  const blockParticipation =
+    isSingleLimit && (isParticipated || (isBookContest && hasBookSubmission));
+
+  const backgroundColor = useMemo(
+    () => (isDark ? themeColors.black : themeColors.appBackground),
+    [isDark],
+  );
+
+  const handleParticipate = () => {
+    // Do not allow navigation while the server-side participation status is
+    // still being resolved, or after a single-entry submission exists.
+    if (contestStatusLoading || blockParticipation) {
+      return;
+    }
 
     // Book contests do not use role eligibility or the regular entry form.
     if (isBookContest) {
@@ -175,8 +192,52 @@ const ContestDetails = () => {
     useCallback(() => {
       if (!contestId) return;
 
-      dispatch(getContestByIdThunk(contestId));
-      dispatch(getContestStatusThunk(contestId));
+      let active = true;
+      const refreshStatus = async () => {
+        const contest = await dispatch(getContestByIdThunk(contestId)).unwrap();
+        dispatch(getContestStatusThunk(contestId));
+
+        const values = [
+          contest?.contest_type,
+          contest?.contestType,
+          contest?.content_type,
+          contest?.contest_content_type,
+          contest?.type,
+          contest?.submission_type,
+        ].map(value => String(value ?? '').toLowerCase());
+        const isBook =
+          values.some(value => value === 'book' || value.includes('book')) ||
+          Number(
+            contest?.book_submission_limit ||
+              contest?.max_books ||
+              contest?.selection_limit,
+          ) > 0 ||
+          contest?.is_book_contest === 1 ||
+          contest?.is_book_contest === true;
+
+        if (!isBook) {
+          if (active) setHasBookSubmission(false);
+          return;
+        }
+
+        try {
+          const submission = await getMyBookContestSubmission(contestId);
+          // The endpoint returns HTTP 200 with data: null when the user has
+          // not submitted yet. Only an actual submission id should lock the
+          // single-entry Participate button.
+          if (active) setHasBookSubmission(Boolean(submission?.id));
+        } catch {
+          if (active) setHasBookSubmission(false);
+        }
+      };
+
+      refreshStatus().catch(() => {
+        if (active) setHasBookSubmission(false);
+      });
+
+      return () => {
+        active = false;
+      };
     }, [contestId]),
   );
 
@@ -545,6 +606,8 @@ const ContestDetails = () => {
                       ? 'Contest Ended'
                       : isUpcoming
                       ? 'Contest Not Started'
+                      : contestStatusLoading
+                      ? 'Checking Participation'
                       : blockParticipation
                       ? 'Already Participated'
                       : isParticipated && !isSingleLimit
@@ -552,11 +615,18 @@ const ContestDetails = () => {
                       : 'Participate'
                   }
                   onPress={handleParticipate}
-                  disabled={isExpired || isUpcoming || blockParticipation}
+                  disabled={
+                    isExpired ||
+                    isUpcoming ||
+                    contestStatusLoading ||
+                    blockParticipation
+                  }
                   marginTop={10}
                   style={{
                     opacity:
-                      blockParticipation || contestStatus === 'upcoming'
+                      blockParticipation ||
+                      contestStatusLoading ||
+                      contestStatus === 'upcoming'
                         ? 0.7
                         : 1,
                   }}

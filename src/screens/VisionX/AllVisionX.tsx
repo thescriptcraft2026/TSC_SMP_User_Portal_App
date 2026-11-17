@@ -466,7 +466,7 @@ const AllVisionX = () => {
             }),
           );
         }}
-        // ✅ Genre props
+        // ✅ Category filter props
         showGenreIcon={true}
         showGenreDropdown={showGenreDropdown}
         handleGenre={handleGenreToggle}
@@ -483,7 +483,7 @@ const AllVisionX = () => {
             }),
           );
         }}
-        dropdownType="genre"
+        dropdownType="category"
       />
 
       <FlatList

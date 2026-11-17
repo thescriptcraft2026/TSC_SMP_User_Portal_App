@@ -456,12 +456,12 @@ const AddVisionX = () => {
         {/* ── Genres ───────────────────────────────────────────────────── */}
         <View style={[styles.card, { backgroundColor: cardBg }]}>
           <Text style={[styles.sectionTitle, { color: textColor }]}>
-            Genre <Text>*</Text>
+            Category <Text>*</Text>
           </Text>
           <Controller
             control={control}
             name="genere"
-            rules={{ required: 'Genre is required' }}
+            rules={{ required: 'Category is required' }}
             render={({ field: { value, onChange } }: any) => (
               <FloatingDropdown
                 label="Category"

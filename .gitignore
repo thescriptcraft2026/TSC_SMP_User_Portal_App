@@ -85,3 +85,6 @@ yarn-error.log
 .vscode/launch.json
 .vscode/settings.json
 release_builds/
+.~ange_Request_Bulk_Book_Upload_Book_Contest_Ratings.docx
+Change_Request_Bulk_Book_Upload_Book_Contest_Ratings.docx
+create_change_request.py

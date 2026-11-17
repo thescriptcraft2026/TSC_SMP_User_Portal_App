@@ -60,7 +60,12 @@ const BookContestSubmissions = () => {
   React.useEffect(() => {
     if (!submissions.length) return;
     setLiked(submissions.filter((book: any) => book.isLiked).map((book: any) => String(book.id)));
-    setRatings(Object.fromEntries(submissions.filter((book: any) => book.contest_rating).map((book: any) => [String(book.id), Number(book.contest_rating)])));
+    const serverRatings = Object.fromEntries(
+      submissions
+        .filter((book: any) => book.contest_rating)
+        .map((book: any) => [String(book.id), Number(book.contest_rating)]),
+    );
+    setRatings(current => ({ ...current, ...serverRatings }));
   }, [submissions]);
 
   const averageRating = useMemo(() => {
@@ -92,7 +97,9 @@ const BookContestSubmissions = () => {
     const previousRating = ratings[id] || 0;
     setRatings(current => ({ ...current, [id]: value }));
     try {
-      await api.post(`/actions/rate/${id}`, { rating: value, contest_id: contestId });
+      const response = await api.post(`/actions/rate/${id}`, { rating: value, contest_id: contestId });
+      const savedRating = Number(response?.data?.data?.rating || value);
+      setRatings(current => ({ ...current, [id]: savedRating }));
     } catch {
       setRatings(current => ({ ...current, [id]: previousRating }));
       show({ type: 'error', title: 'Unable to save contest rating.' });

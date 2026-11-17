@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Dimensions, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Dimensions, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
@@ -80,20 +80,22 @@ const SelectBooksForContest = () => {
     setSelectedItems(current => [...current, { id, content_type }]);
   };
 
-  const submitItems = async (confirm_resubmit = false) => {
+  const submitItems = async () => {
     if (!selectedItems.length) return;
     try {
-      const response = await api.post(`/contest/book-submission/${contest.id}`, { items: selectedItems, confirm_resubmit });
+      const response = await api.post(`/contest/book-submission/${contest.id}`, { items: selectedItems });
       const submission = response?.data?.data;
       const selectedBooks = submission?.books || eligibleBooks.filter(item => selectedItems.some(selected => selected.id === String(item.id) && selected.content_type === 'book'));
       const selectedSynopses = submission?.synopses || eligibleSynopses.filter(item => selectedItems.some(selected => selected.id === String(item.id) && selected.content_type === 'synopsis'));
       navigation.replace('SuccessScreen', { contestId: contest.id, title: contest.title, bookContest: true, selectedBooks, selectedSynopses, selectedItems, participantId: submission?.id, shareToken: submission?.share_token });
     } catch (submitError: any) {
-      if (submitError?.response?.status === 409 && submitError?.response?.data?.code === 'RESUBMIT_CONFIRMATION_REQUIRED') {
-        Alert.alert('Replace existing submission?', submitError.response.data.message, [{ text: 'Cancel', style: 'cancel' }, { text: 'Replace and submit', style: 'destructive', onPress: () => submitItems(true) }]);
-        return;
-      }
-      show({ type: 'error', title: submitError?.response?.data?.message || 'Unable to submit items. Please try again.' });
+      show({
+        type: 'error',
+        title:
+          submitError?.response?.data?.code === 'DUPLICATE_SUBMISSION'
+            ? 'This same selection was already submitted.'
+            : submitError?.response?.data?.message || 'Unable to submit items. Please try again.',
+      });
     }
   };
 
