@@ -2,6 +2,7 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  Linking,
   Platform,
   RefreshControl,
   ScrollView,
@@ -31,6 +32,7 @@ import { themeColors } from '../../theme/colors';
 import GenreBadge from '../../components/Badges/GenreBadge';
 import RatingModal from '../../components/Modals/RatingModal';
 import User from '../../assets/SVG/User';
+import BookIcon from '../../assets/SVG/Book';
 import { useShare } from '../../hooks/useShare';
 import HeartActive from '../../assets/SVG/HeartActive';
 import ActionBar from '../../components/AcrtionBar/ActionBar';
@@ -58,6 +60,7 @@ import {
 import { useToast } from '../../components/Toast/ToastProvider';
 import { follow, unFollow } from '../../redux/slices/profileSlice';
 import ReportModal from '../../components/Modals/ReportModal';
+import CreatorConnectionModal from '../../components/Modals/CreatorConnectionModal';
 import { createReport, getReports } from '../../redux/slices/reportSlice';
 import PrimaryButton from '../../components/Buttons/PrimaryButton';
 import BookCard from './components/cards/BookCard';
@@ -89,6 +92,7 @@ const BookDetails = () => {
   const [expanded, setExpanded] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [connectionPromptVisible, setConnectionPromptVisible] = useState(false);
 
   const { selectedBook, loading, suggestedBooks, suggestedLoading } =
     useSelector((state: any) => state.book);
@@ -271,6 +275,13 @@ const BookDetails = () => {
       setRefreshing(false);
     }
   }, [bookId, selectedBook?.id, dispatch]);
+
+  useEffect(() => {
+    if (loading || !selectedBook?.user?.id || isOwnPost) return;
+
+    const timer = setTimeout(() => setConnectionPromptVisible(true), 10000);
+    return () => clearTimeout(timer);
+  }, [bookId, loading, selectedBook?.user?.id, isOwnPost]);
 
   // 🔥 FOLLOW
   const handleFollow = async () => {
@@ -483,6 +494,25 @@ const BookDetails = () => {
                 >
                   {selectedBook?.title}
                 </Text>
+                {selectedBook?.author_name && (
+                  <View style={styles.bookAuthorRow}>
+                    <BookIcon
+                      width={18}
+                      height={18}
+                      color={themeColors.primary as string}
+                    />
+                    <Text style={styles.bookAuthorName}>
+                      {selectedBook.author_name}
+                    </Text>
+                  </View>
+                )}
+                {selectedBook?.more_info_link && (
+                  <TouchableOpacity
+                    onPress={() => Linking.openURL(selectedBook.more_info_link)}
+                  >
+                    <Text style={styles.moreInfoLink}>More Info</Text>
+                  </TouchableOpacity>
+                )}
                 <View
                   style={{
                     flexDirection: 'row',
@@ -879,6 +909,14 @@ const BookDetails = () => {
         onSubmit={handleReport}
         reportType="BOOKS" // ✅ add this
       />
+      <CreatorConnectionModal
+        visible={connectionPromptVisible && !isOwnPost}
+        creator={selectedBook?.user}
+        onClose={() => setConnectionPromptVisible(false)}
+        onUpdated={() => dispatch(getBookByIdThunk(selectedBook.id))}
+        onError={message => show({ type: 'error', title: message })}
+        onSuccess={message => show({ type: 'success', title: message })}
+      />
     </SafeAreaView>
   );
 };
@@ -921,6 +959,27 @@ const styles = StyleSheet.create({
 
   author: {
     fontSize: 16,
+    fontFamily: Fonts.SemiBold,
+  },
+
+  bookAuthorName: {
+    marginTop: 0,
+    fontSize: 17,
+    color: themeColors.white,
+    fontFamily: Fonts.SemiBold,
+  },
+
+  bookAuthorRow: {
+    marginTop: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+  },
+
+  moreInfoLink: {
+    marginTop: 6,
+    fontSize: 14,
+    color: themeColors.primary,
     fontFamily: Fonts.SemiBold,
   },
 

@@ -28,7 +28,7 @@ import ImageUploader from '../../components/ImageUploader/ImageUploader';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import FloatingDropdown from '../../components/DropDown/FloatingDropdown';
 import { useDispatch, useSelector } from 'react-redux';
-import { getGeneres } from '../../redux/slices/genresSlice';
+import api from '../../../Instance/Instance';
 import { AppDispatch } from '../../redux/store';
 import {
   createVisionXThunk,
@@ -57,17 +57,30 @@ const AddVisionX = () => {
   const dispatch = useDispatch<AppDispatch>();
   const isDark = true;
   const insets = useSafeAreaInsets();
-  const { generes } = useSelector((state: any) => state.genre);
   const { createLoading, updateLoading, loading } = useSelector(
     (state: any) => state.visionx,
   );
   const [publish, setPublish] = useState(false);
+  const [creatorCategories, setCreatorCategories] = useState<any[]>([]);
 
   useEffect(() => {
-    if (!generes || generes.length === 0) {
-      dispatch(getGeneres());
-    }
-  }, [generes, dispatch]);
+    let mounted = true;
+
+    api
+      .get('/public/creator-categories')
+      .then((response) => {
+        if (mounted) {
+          setCreatorCategories(response?.data?.data || []);
+        }
+      })
+      .catch((error) => {
+        console.log('Creator categories dropdown error', error);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (visionId) {
@@ -115,7 +128,7 @@ const AddVisionX = () => {
     [isDark],
   );
 
-  const genereOptions = (generes || []).map((item: any) => ({
+  const genereOptions = creatorCategories.map((item: any) => ({
     label: item.name,
     value: item.id,
   }));
