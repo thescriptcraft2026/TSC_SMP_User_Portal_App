@@ -136,15 +136,21 @@ const ActionBar = ({
                           />
                         )
                       ) : (
-                        item.icon
+                        typeof item.icon === 'string' || typeof item.icon === 'number' ? (
+                          <Text style={styles.text}>{item.icon}</Text>
+                        ) : (
+                          item.icon
+                        )
                       )}
                     </Animated.View>
                   </View>
+                ) : typeof item.icon === 'string' || typeof item.icon === 'number' ? (
+                  <Text style={styles.text}>{item.icon}</Text>
                 ) : (
                   item.icon
                 )}
 
-                {item.label && (
+                {item.label !== undefined && item.label !== null && (
                   <Text
                     style={[
                       styles.text,
@@ -163,7 +169,7 @@ const ActionBar = ({
                   },
                 ]}
               >
-                {item.title}
+                {item.title || ''}
               </Text>
             </View>
 
