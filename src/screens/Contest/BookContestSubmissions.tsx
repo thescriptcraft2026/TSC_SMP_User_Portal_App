@@ -111,7 +111,9 @@ const BookContestSubmissions = () => {
       <AuthHeader showBack title="Book Submissions" onBack={() => navigation.goBack()} />
       <FlatList
         data={submissions}
-        keyExtractor={(item: any) => String(item.id)}
+        keyExtractor={(item: any, index: number) =>
+          `${item.id}-${item.contentId || item.book_id || item.content_id || index}`
+        }
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
