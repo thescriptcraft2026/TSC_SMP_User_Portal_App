@@ -41,6 +41,7 @@ import { formatDate } from '../../utils/date';
 
 import { useToast } from '../../components/Toast/ToastProvider';
 import OpportunityDetailsSkeleton from '../../components/skeleton/OpportunityDetailsSkeleton';
+import CreatorInlineActions from '../../components/CreatorInlineActions';
 import NotFoundScreen from '../NotFoundScreen';
 import { createReport, getReports } from '../../redux/slices/reportSlice';
 import ReportModal from '../../components/Modals/ReportModal';
@@ -776,6 +777,10 @@ const SingleOpportunityDetails = () => {
                       </Text>
                     </View>
                   </TouchableOpacity>
+                  <CreatorInlineActions
+                    creator={selectedOpportunity?.posted_user}
+                    onRefresh={() => dispatch(getOpportunityDetailsByIdThunk(selectedOpportunity?.id))}
+                  />
                   <View
                     style={{
                       flexDirection: 'row',

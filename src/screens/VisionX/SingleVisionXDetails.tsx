@@ -60,6 +60,7 @@ import {
 import { createReport, getReports } from '../../redux/slices/reportSlice';
 import ReportModal from '../../components/Modals/ReportModal';
 import CreatorConnectionModal from '../../components/Modals/CreatorConnectionModal';
+import CreatorInlineActions from '../../components/CreatorInlineActions';
 import { ratingAction, updateRatingLocal } from '../../redux/slices/bookSlice';
 import { ReactionType } from '../../hooks/useEmojiReaction';
 import { useHandleLike } from '../../hooks/useHandleLike';
@@ -670,6 +671,10 @@ const SingleVisionXDetails = () => {
             >
               {selectedVisionX?.user?.name}
             </Text>
+            <CreatorInlineActions
+              creator={selectedVisionX?.user}
+              onRefresh={() => dispatch(getVisionXByIdThunk(visionxId))}
+            />
             <Text
               style={[
                 styles.date,

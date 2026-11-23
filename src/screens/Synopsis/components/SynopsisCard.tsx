@@ -24,6 +24,7 @@ import GenreBadge from '../../../components/Badges/GenreBadge';
 import { formatCount, formatDate, formatTime } from '../../../utils/date';
 import { getDisplayTime } from '../../../utils/timeAgo';
 import Heart from '../../../assets/SVG/Heart';
+import CreatorInlineActions from '../../../components/CreatorInlineActions';
 
 type Props = {
   image: string;
@@ -37,6 +38,7 @@ type Props = {
   rating?: string;
   title?: string;
   author?: string;
+  creator?: any;
   description?: string;
   views?: number | any;
   handleLike?: (reaction?: ReactionType) => void;
@@ -63,6 +65,7 @@ const SynopsisCard = ({
   rating,
   title,
   author,
+  creator,
   views,
   handleLike,
   marginRight,
@@ -172,6 +175,7 @@ const SynopsisCard = ({
                 >
                   By {author}
                 </Text>
+                <CreatorInlineActions creator={creator} />
                 <Text style={styles.dot}> • </Text>
                 <Text style={styles.dateText} numberOfLines={1}>
                   {getDisplayTime(createdAt)}

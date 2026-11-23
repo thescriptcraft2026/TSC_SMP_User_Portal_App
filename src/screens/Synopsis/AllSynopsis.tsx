@@ -495,6 +495,7 @@ const AllSynopsis = () => {
                   createdAt={item?.createdAt}
                   description={stripHtml(item?.story || item?.synopsis)}
                   author={item?.user?.name}
+                  creator={item?.user}
                   handleLike={(reaction?: ReactionType) =>
                     handleLike({
                       id: item?.id,

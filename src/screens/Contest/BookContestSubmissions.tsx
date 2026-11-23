@@ -17,6 +17,7 @@ import { themeColors } from '../../theme/colors';
 import { Fonts } from '../../constants/Fonts';
 import api from '../../../Instance/Instance';
 import { useToast } from '../../components/Toast/ToastProvider';
+import CreatorInlineActions from '../../components/CreatorInlineActions';
 
 const BookContestSubmissions = () => {
   const navigation = useNavigation<any>();
@@ -145,7 +146,10 @@ const BookContestSubmissions = () => {
               <View style={styles.cardBody}>
                 <Text style={styles.contentType}>{item.content_type === 'synopsis' ? 'SYNOPSIS' : 'BOOK'}</Text>
                 <Text style={styles.bookTitle} numberOfLines={2}>{item.title}</Text>
-                <Text style={styles.author}>{item.user?.name || item.author || 'Author'}</Text>
+                <View style={styles.creatorRow}>
+                  <Text style={styles.author}>{item.submissionUser?.name || item.user?.name || item.author || 'Author'}</Text>
+                  <CreatorInlineActions creator={item.submissionUser || item.user} />
+                </View>
                 <View style={styles.actionRow}>
                   <TouchableOpacity style={styles.action} onPress={() => handleLike(id)}><Ionicons name={isLiked ? 'heart' : 'heart-outline'} size={20} color={isLiked ? '#FF5964' : '#fff'} /><Text style={styles.actionText}>{isLiked ? 'Liked' : 'Like'}</Text></TouchableOpacity>
                   <View style={styles.rating}><Text style={styles.rateLabel}>Rate</Text>{[1, 2, 3, 4, 5].map(value => <TouchableOpacity key={value} onPress={() => handleRating(id, value)}><Ionicons name={value <= rating ? 'star' : 'star-outline'} size={17} color={themeColors.primary} /></TouchableOpacity>)}</View>
@@ -182,6 +186,7 @@ const styles = StyleSheet.create({
   bookTitle: { color: '#fff', fontFamily: Fonts.Bold, fontSize: 16, lineHeight: 20 },
   contentType: { color: themeColors.primary, fontFamily: Fonts.Bold, fontSize: 10, letterSpacing: 1, marginBottom: 4 },
   author: { color: '#9A9AA3', fontFamily: Fonts.Regular, fontSize: 12, marginTop: 5 },
+  creatorRow: { flexDirection: 'row', alignItems: 'center', minHeight: 28 },
   actionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 14 },
   action: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   actionText: { color: '#C5C5CB', fontFamily: Fonts.SemiBold, fontSize: 12 },

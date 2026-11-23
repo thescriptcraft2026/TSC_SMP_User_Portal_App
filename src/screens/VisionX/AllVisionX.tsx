@@ -578,6 +578,7 @@ const AllVisionX = () => {
                 avatar={item?.user?.profile_photo_path}
                 name={item?.user?.name}
                 user_name={item?.user?.user_name}
+                creator={item?.user}
                 time={item?.createdAt}
                 likes={likeCountMap[item?.id] ?? item?.likes_count}
                 liked={likedIds.includes(item?.id)}

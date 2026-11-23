@@ -36,6 +36,7 @@ import { useShare } from '../../hooks/useShare';
 import HeartActive from '../../assets/SVG/HeartActive';
 import ActionBar from '../../components/AcrtionBar/ActionBar';
 import FollowButton from '../../components/Buttons/FollowButton';
+import CreatorInlineActions from '../../components/CreatorInlineActions';
 import EyeTwo from '../../assets/SVG/EyeTwo';
 import { useDispatch, useSelector } from 'react-redux';
 import he from 'he';
@@ -603,22 +604,24 @@ const SynopsisDetails = () => {
                     justifyContent: 'space-between',
                   }}
                 >
-                  <TouchableOpacity
-                    onPress={() => {
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      flex: 1,
+                    }}
+                  >
+                    <TouchableOpacity
+                      onPress={() => {
                       navigation.navigate('Profile', {
                         username:
                           selectedSynopses?.user?.user_name ||
                           selectedSynopses?.user?.id ||
                           selectedSynopses?.user?.userId,
                       });
-                    }}
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 6,
-                      justifyContent: "space-between"
-                    }}
-                  >
+                      }}
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+                    >
                     <User
                       size={14}
                       color={isDark ? themeColors.gray : themeColors.black}
@@ -634,7 +637,12 @@ const SynopsisDetails = () => {
                     >
                       {selectedSynopses?.user?.name} -
                     </Text>
-                  </TouchableOpacity>
+                    </TouchableOpacity>
+                    <CreatorInlineActions
+                      creator={selectedSynopses?.user}
+                      onRefresh={() => dispatch(getBookByIdThunk(selectedSynopses.id))}
+                    />
+                  </View>
 
                   <Text style={styles.date}>
                     {formatDate(selectedSynopses?.createdAt)}
@@ -804,6 +812,7 @@ const SynopsisDetails = () => {
                         rating={item?.avg_rating ?? '0'}
                         title={item?.title}
                         author={item?.user?.name}
+                        creator={item?.user}
                         handleLike={(reaction?: ReactionType) =>
                           handleLike({
                             id: item.id,
