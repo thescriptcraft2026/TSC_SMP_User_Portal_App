@@ -41,6 +41,7 @@ import { ReactionType } from '../../hooks/useEmojiReaction';
 import Plus from '../../assets/SVG/Plus';
 import StarBanner from '../../assets/SVG/StarBanner';
 import { Fonts } from '../../constants/Fonts';
+import OngoingBookContestCTA from '../../components/Contest/OngoingBookContestCTA';
 
 const { width } = Dimensions.get('window');
 
@@ -332,7 +333,7 @@ const AllSynopsis = () => {
         showBack
         title="Synopses"
         count={pagination?.total_contents}
-        showCount={true}
+        showCount={!loading && pagination?.total_contents !== undefined}
         onBack={handleBack}
         // ✅ Search props
         showSearchIcon={true}
@@ -377,17 +378,19 @@ const AllSynopsis = () => {
         onScroll={handleScroll} // 👈 Add this
         scrollEventThrottle={16} // 👈 Add this
         ListHeaderComponent={
-          loading || synopses.length > 0 ? (
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                borderBottomColor: themeColors.gray,
-                borderBottomWidth: 0.5,
-                marginBottom: 10,
-              }}
-            >
+          <>
+            <OngoingBookContestCTA />
+            {loading || synopses.length > 0 ? (
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  borderBottomColor: themeColors.gray,
+                  borderBottomWidth: 0.5,
+                  marginBottom: 10,
+                }}
+              >
               <Tabs
                 tabs={TABS}
                 activeTab={activeTab}
@@ -432,8 +435,9 @@ const AllSynopsis = () => {
               >
                 <Plus size={28} />
               </TouchableOpacity>
-            </View>
-          ) : null
+              </View>
+            ) : null}
+          </>
         }
         data={loading && page === 1 ? skeletonData : synopses}
         keyExtractor={(item: any, index) =>

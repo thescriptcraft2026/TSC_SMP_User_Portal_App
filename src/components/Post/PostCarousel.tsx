@@ -5,8 +5,8 @@ import {
   Pressable,
   Text,
   Animated,
-  Dimensions,
   Image,
+  useWindowDimensions,
 } from 'react-native';
 
 import PagerView from 'react-native-pager-view';
@@ -18,9 +18,6 @@ import { useNavigation } from '@react-navigation/native';
 import { themeColors } from '../../theme/colors';
 import { skipFeedRefreshOnFocus } from '../../utils/navigationFlags';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-const MAX_HEIGHT = 360;
 const MIN_HEIGHT = 120;
 
 type MediaItem = {
@@ -37,11 +34,10 @@ type Props = {
 // so a given image URL is only ever measured once
 const heightCache: Record<string, number> = {};
 
-const clampHeight = (h: number) =>
-  Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, h));
-
 const PostCarousel = ({ media = [], isVisible = true }: Props) => {
   const navigation = useNavigation<any>();
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const maxHeight = Math.min(560, Math.max(280, windowHeight * 0.55));
 
   const pagerRef = useRef<PagerView>(null);
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -83,8 +79,9 @@ const PostCarousel = ({ media = [], isVisible = true }: Props) => {
               Image.getSize(
                 item.url,
                 (w, h) => {
-                  const height = clampHeight(
-                    SCREEN_WIDTH * (h / w),
+                  const height = Math.max(
+                    MIN_HEIGHT,
+                    Math.min(maxHeight, windowWidth * (h / w)),
                   );
 
                   heightCache[item.url] = height;
@@ -93,7 +90,7 @@ const PostCarousel = ({ media = [], isVisible = true }: Props) => {
                   resolve();
                 },
                 () => {
-                  heights[index] = MAX_HEIGHT;
+                  heights[index] = maxHeight;
                   resolve();
                 },
               );
@@ -105,12 +102,12 @@ const PostCarousel = ({ media = [], isVisible = true }: Props) => {
 
       setImageHeights(heights);
 
-      const maxHeight =
+      const containerMaxHeight =
         Object.values(heights).length > 0
           ? Math.max(...Object.values(heights))
-          : MAX_HEIGHT;
+          : maxHeight;
 
-      setContainerHeight(maxHeight);
+      setContainerHeight(containerMaxHeight);
     };
 
     loadHeights();
@@ -118,7 +115,7 @@ const PostCarousel = ({ media = [], isVisible = true }: Props) => {
     return () => {
       mounted = false;
     };
-  }, [media]);
+  }, [media, maxHeight, windowWidth]);
 
   const openViewer = (tappedIndex: number) => {
     skipFeedRefreshOnFocus.current = true;
@@ -173,7 +170,10 @@ const PostCarousel = ({ media = [], isVisible = true }: Props) => {
                 Image.getSize(
                   item.url,
                   (w, h) => {
-                    const height = clampHeight(SCREEN_WIDTH * (h / w));
+                    const height = Math.max(
+                      MIN_HEIGHT,
+                      Math.min(maxHeight, windowWidth * (h / w)),
+                    );
                     heightCache[item.url] = height;
                     setImageHeights(prev => ({
                       ...prev,

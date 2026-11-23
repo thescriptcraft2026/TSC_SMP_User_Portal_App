@@ -32,11 +32,13 @@ import { themeColors } from '../../theme/colors';
 import GenreBadge from '../../components/Badges/GenreBadge';
 import RatingModal from '../../components/Modals/RatingModal';
 import User from '../../assets/SVG/User';
+import Chat from '../../assets/SVG/Chat';
+import UserPlus from '../../assets/SVG/UserPlus';
+import CheckTwo from '../../assets/SVG/CheckTwo';
 import BookIcon from '../../assets/SVG/Book';
 import { useShare } from '../../hooks/useShare';
 import HeartActive from '../../assets/SVG/HeartActive';
 import ActionBar from '../../components/AcrtionBar/ActionBar';
-import FollowButton from '../../components/Buttons/FollowButton';
 import EyeTwo from '../../assets/SVG/EyeTwo';
 import { useDispatch, useSelector } from 'react-redux';
 import {
@@ -110,7 +112,9 @@ const BookDetails = () => {
     setExpanded(false);
   }, [bookId]);
 
-  const isFollowing = selectedBook?.user?.isFollowing === 1;
+  const isFollowing =
+    selectedBook?.user?.isFollowing === 1 ||
+    selectedBook?.user?.isFollowing === true;
 
   const backgroundColor = useMemo(
     () => (isDark ? themeColors.black : themeColors.appBackground),
@@ -294,6 +298,24 @@ const BookDetails = () => {
     await dispatch(getBookByIdThunk(selectedBook.id));
 
     show({ type: 'success', title: res?.message });
+  };
+
+  const handleMessageCreator = async () => {
+    const creator = selectedBook?.user;
+    if (!creator?.id) return;
+
+    navigation.navigate('ChatRoom', {
+      chatId: creator?.chat_id || selectedBook?.chat_id || null,
+      isNewChat: !(creator?.chat_id || selectedBook?.chat_id),
+      user: {
+        id: creator.id,
+        userId: creator.id,
+        user_name: creator.user_name,
+        name: creator.name,
+        avatar: creator.profile_photo_path || creator.avatar,
+        is_online: creator.is_online,
+      },
+    });
   };
 
   const { handleShare } = useShare({
@@ -481,6 +503,30 @@ const BookDetails = () => {
                   type={"Book"}
                 />
               </View>
+              {!isOwnPost && selectedBook?.user?.id && (
+                <View style={styles.imageActionStack}>
+                  <TouchableOpacity
+                    accessibilityLabel="Message creator"
+                    accessibilityRole="button"
+                    style={styles.imageActionButton}
+                    onPress={handleMessageCreator}
+                  >
+                    <Chat size={20} color={themeColors.white} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    accessibilityLabel={isFollowing ? 'Following creator' : 'Follow creator'}
+                    accessibilityRole="button"
+                    style={styles.imageActionButton}
+                    onPress={handleFollow}
+                  >
+                    {isFollowing ? (
+                      <CheckTwo size={20} color={themeColors.primary} />
+                    ) : (
+                      <UserPlus size={20} color={themeColors.white} />
+                    )}
+                  </TouchableOpacity>
+                </View>
+              )}
 
               {/* TITLE SECTION */}
               <View style={styles.titleContainer}>
@@ -510,7 +556,7 @@ const BookDetails = () => {
                   <TouchableOpacity
                     onPress={() => Linking.openURL(selectedBook.more_info_link)}
                   >
-                    <Text style={styles.moreInfoLink}>More Info</Text>
+                    <Text style={styles.moreInfoLink}>Purchase</Text>
                   </TouchableOpacity>
                 )}
                 <View
@@ -1050,6 +1096,26 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 10,
+  },
+
+  imageActionStack: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 106 : 86,
+    right: 16,
+    zIndex: 12,
+    alignItems: 'center',
+    gap: 8,
+  },
+
+  imageActionButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(20,20,20,0.72)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
   },
 
   contestBadge: {

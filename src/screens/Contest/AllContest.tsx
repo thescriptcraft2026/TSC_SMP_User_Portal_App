@@ -36,14 +36,17 @@ import ContestBannerSwiper from './components/ContestBannerSwiper';
 const CONTEST_TABS = ['Ongoing', 'Upcoming', 'Completed'];
 const { width } = Dimensions.get('window');
 
-const AllContest = () => {
+const AllContest = ({ route }: any) => {
   const isDark = true;
   const { show } = useToast();
   const navigation = useNavigation<any>();
   const dispatch = useDispatch<any>();
   const [refreshing, setRefreshing] = useState(false);
-  const [contestTab, setContestTab] = useState('Ongoing');
-  const [sortBy, setSortBy] = useState('ongoing');
+  const initialTab = route?.params?.initialTab === 'Upcoming' || route?.params?.initialTab === 'Completed'
+    ? route.params.initialTab
+    : 'Ongoing';
+  const [contestTab, setContestTab] = useState(initialTab);
+  const [sortBy, setSortBy] = useState(initialTab === 'Upcoming' ? 'upcoming' : initialTab === 'Completed' ? 'completed' : 'ongoing');
   const [showMyOpps, setShowMyOpps] = useState(false);
   const [search, setSearch] = useState('');
   const [genreId, setGenreId] = useState('');
