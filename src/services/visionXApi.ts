@@ -5,7 +5,7 @@ export const getVisionXApi = async (
   sort_by = 'recent',
   page = 1,
   search = '',
-  genre_id = '',
+  category_id = '',
 ) => {
   const params: any = {
     page,
@@ -19,8 +19,10 @@ export const getVisionXApi = async (
     params.search = search;
   }
 
-  if (genre_id) {
-    params.genre_id = genre_id;
+  if (category_id) {
+    // Creator Zone uses the dedicated creator_category table. The content
+    // endpoint expects this filter as category_id, not genre_id.
+    params.category_id = category_id;
   }
 
   const res = await api.get('/content', { params });

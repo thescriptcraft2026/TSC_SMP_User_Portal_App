@@ -104,7 +104,7 @@ const AllVisionX = () => {
           page: 1,
           sort_by: sortBy,
           search,
-          genre_id: genreId,
+          category_id: genreId,
         }),
       );
     }, [dispatch, sortBy, search, genreId]),
@@ -184,7 +184,7 @@ const AllVisionX = () => {
         page: 1,
         sort_by: sortBy,
         search,
-        genre_id: genreId,
+        category_id: genreId,
       }),
     );
 
@@ -210,7 +210,7 @@ const AllVisionX = () => {
         page: page + 1,
         sort_by: sortBy,
         search,
-        genre_id: genreId,
+        category_id: genreId,
       }),
     );
   };
@@ -333,7 +333,7 @@ const AllVisionX = () => {
                   page: 1,
                   sort_by: sortBy,
                   search,
-                  genre_id: genreId,
+                  category_id: genreId,
                 }),
               );
 
@@ -364,7 +364,7 @@ const AllVisionX = () => {
         page: 1,
         sort_by: sortBy,
         search: '',
-        genre_id: genreId,
+        category_id: genreId,
       }),
     );
   };
@@ -378,7 +378,7 @@ const AllVisionX = () => {
         page: 1,
         sort_by: sortBy,
         search: search,
-        genre_id: '',
+        category_id: '',
       }),
     );
   };
@@ -462,7 +462,7 @@ const AllVisionX = () => {
               page: 1,
               sort_by: sortBy,
               search: text,
-              genre_id: genreId,
+                  category_id: genreId,
             }),
           );
         }}
@@ -479,7 +479,7 @@ const AllVisionX = () => {
               page: 1,
               sort_by: sortBy,
               search: search,
-              genre_id: value,
+              category_id: value,
             }),
           );
         }}

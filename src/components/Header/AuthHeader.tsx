@@ -196,8 +196,16 @@ const AuthHeader: React.FC<AuthHeaderProps> = ({
 
       const res = await api.get(endpoint);
 
+      const rawItems = Array.isArray(res?.data?.data)
+        ? res.data.data
+        : Array.isArray(res?.data)
+          ? res.data
+          : Array.isArray(res?.data?.data?.categories)
+            ? res.data.data.categories
+            : [];
+
       const formattedData =
-        res?.data?.data?.map((item: any) => ({
+        rawItems.map((item: any) => ({
           label: item?.name,
           value: item?.id,
         })) || [];
