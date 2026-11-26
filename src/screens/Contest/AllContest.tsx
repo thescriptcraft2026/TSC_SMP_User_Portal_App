@@ -32,19 +32,21 @@ import Dart from '../../assets/SVG/Dart';
 import { useToast } from '../../components/Toast/ToastProvider';
 import { useShare } from '../../hooks/useShare';
 import ContestBannerSwiper from './components/ContestBannerSwiper';
-import { LOCAL_BOOK_CONTEST } from '../../data/localBookContest';
 
 const CONTEST_TABS = ['Ongoing', 'Upcoming', 'Completed'];
 const { width } = Dimensions.get('window');
 
-const AllContest = () => {
+const AllContest = ({ route }: any) => {
   const isDark = true;
   const { show } = useToast();
   const navigation = useNavigation<any>();
   const dispatch = useDispatch<any>();
   const [refreshing, setRefreshing] = useState(false);
-  const [contestTab, setContestTab] = useState('Ongoing');
-  const [sortBy, setSortBy] = useState('ongoing');
+  const initialTab = route?.params?.initialTab === 'Upcoming' || route?.params?.initialTab === 'Completed'
+    ? route.params.initialTab
+    : 'Ongoing';
+  const [contestTab, setContestTab] = useState(initialTab);
+  const [sortBy, setSortBy] = useState(initialTab === 'Upcoming' ? 'upcoming' : initialTab === 'Completed' ? 'completed' : 'ongoing');
   const [showMyOpps, setShowMyOpps] = useState(false);
   const [search, setSearch] = useState('');
   const [genreId, setGenreId] = useState('');
@@ -139,11 +141,7 @@ const AllContest = () => {
   const contestData = useMemo(() => {
     if (!showMyOpps) {
       const remoteContests = contest || [];
-      // Temporary prototype fixture: keep this visible until the staging API
-      // exposes a real book-contest record.
-      return contestTab === 'Ongoing' && !remoteContests.some((item: any) => item?.id === LOCAL_BOOK_CONTEST.id)
-        ? [LOCAL_BOOK_CONTEST, ...remoteContests]
-        : remoteContests;
+      return remoteContests;
     }
 
     const seen = new Map();
@@ -171,7 +169,7 @@ const AllContest = () => {
     });
 
     return Array.from(seen.values());
-  }, [showMyOpps, myParticipatedContests, contest, contestTab]);
+  }, [showMyOpps, myParticipatedContests, contest]);
 
   // ✅ Function to close search and reset everything
   const handleCloseSearch = () => {
@@ -377,7 +375,7 @@ const AllContest = () => {
         ) : (
           <FlatList
             data={contestData}
-            keyExtractor={(item, index) => `${item?.id}-${index}`}
+            keyExtractor={(item, index) => `${item?.id}-${item?.image || 'no-image'}-${index}`}
             renderItem={({ item }) => {
               if (!item?.id) return null;
               return (

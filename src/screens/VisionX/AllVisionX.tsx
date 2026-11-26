@@ -104,7 +104,7 @@ const AllVisionX = () => {
           page: 1,
           sort_by: sortBy,
           search,
-          genre_id: genreId,
+          category_id: genreId,
         }),
       );
     }, [dispatch, sortBy, search, genreId]),
@@ -184,7 +184,7 @@ const AllVisionX = () => {
         page: 1,
         sort_by: sortBy,
         search,
-        genre_id: genreId,
+        category_id: genreId,
       }),
     );
 
@@ -210,7 +210,7 @@ const AllVisionX = () => {
         page: page + 1,
         sort_by: sortBy,
         search,
-        genre_id: genreId,
+        category_id: genreId,
       }),
     );
   };
@@ -333,7 +333,7 @@ const AllVisionX = () => {
                   page: 1,
                   sort_by: sortBy,
                   search,
-                  genre_id: genreId,
+                  category_id: genreId,
                 }),
               );
 
@@ -364,7 +364,7 @@ const AllVisionX = () => {
         page: 1,
         sort_by: sortBy,
         search: '',
-        genre_id: genreId,
+        category_id: genreId,
       }),
     );
   };
@@ -378,7 +378,7 @@ const AllVisionX = () => {
         page: 1,
         sort_by: sortBy,
         search: search,
-        genre_id: '',
+        category_id: '',
       }),
     );
   };
@@ -462,11 +462,11 @@ const AllVisionX = () => {
               page: 1,
               sort_by: sortBy,
               search: text,
-              genre_id: genreId,
+                  category_id: genreId,
             }),
           );
         }}
-        // ✅ Genre props
+        // ✅ Category filter props
         showGenreIcon={true}
         showGenreDropdown={showGenreDropdown}
         handleGenre={handleGenreToggle}
@@ -479,11 +479,11 @@ const AllVisionX = () => {
               page: 1,
               sort_by: sortBy,
               search: search,
-              genre_id: value,
+              category_id: value,
             }),
           );
         }}
-        dropdownType="genre"
+        dropdownType="category"
       />
 
       <FlatList
@@ -578,6 +578,7 @@ const AllVisionX = () => {
                 avatar={item?.user?.profile_photo_path}
                 name={item?.user?.name}
                 user_name={item?.user?.user_name}
+                creator={item?.user}
                 time={item?.createdAt}
                 likes={likeCountMap[item?.id] ?? item?.likes_count}
                 liked={likedIds.includes(item?.id)}

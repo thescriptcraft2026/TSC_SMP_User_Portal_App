@@ -55,18 +55,18 @@ export const getVisionXThunk = createAsyncThunk(
       sort_by = 'recent',
       type = 'visionx',
       search = '',
-      genre_id = '',
+      category_id = '',
     }: {
       page?: number;
       sort_by?: string;
       type?: string;
       search?: string;
-      genre_id?: string;
+      category_id?: string;
     },
     { rejectWithValue },
   ) => {
     try {
-      const res = await getVisionXApi(type, sort_by, page, search, genre_id);
+      const res = await getVisionXApi(type, sort_by, page, search, category_id);
       return { ...res, page };
     } catch (error: any) {
       return rejectWithValue(error?.response?.data?.message || error?.message);

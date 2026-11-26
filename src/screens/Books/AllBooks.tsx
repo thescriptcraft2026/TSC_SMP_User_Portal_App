@@ -38,9 +38,11 @@ import { getBooks } from '../../redux/slices/bookSlice';
 import { useHandleLike } from '../../hooks/useHandleLike';
 import { useHandleBookmark } from '../../hooks/useHandleBookmark';
 import { ReactionType } from '../../hooks/useEmojiReaction';
+import { follow, unFollow } from '../../redux/slices/profileSlice';
 import Plus from '../../assets/SVG/Plus';
 import StarBanner from '../../assets/SVG/StarBanner';
 import { Fonts } from '../../constants/Fonts';
+import OngoingBookContestCTA from '../../components/Contest/OngoingBookContestCTA';
 
 const { width } = Dimensions.get('window');
 
@@ -67,11 +69,42 @@ const AllBooks = () => {
   const { books, loading, page, hasMore, pagination } = useSelector(
     (state: any) => state.book,
   );
+  const authUser = useSelector((state: any) => state.auth.user);
 
   // ✅ custom hooks
   const { handleLike, likedIds, reactionMap, likeCountMap } = useHandleLike();
 
   const { handleBookmark, bookmarkedIds } = useHandleBookmark();
+
+  const handleMessageCreator = (book: any) => {
+    const creator = book?.user;
+    if (!creator?.id) return;
+
+    navigation.navigate('ChatRoom', {
+      chatId: creator?.chat_id || book?.chat_id || null,
+      isNewChat: !(creator?.chat_id || book?.chat_id),
+      user: {
+        id: creator.id,
+        userId: creator.id,
+        user_name: creator.user_name,
+        name: creator.name,
+        avatar: creator.profile_photo_path || creator.avatar,
+        is_online: creator.is_online,
+      },
+    });
+  };
+
+  const handleFollowCreator = async (book: any) => {
+    const creator = book?.user;
+    if (!creator?.id) return;
+
+    await dispatch(
+      creator?.isFollowing === 1 || creator?.isFollowing === true
+        ? unFollow(creator.id)
+        : follow(creator.id),
+    ).unwrap();
+    dispatch(getBooks({ page: 1, sort_by: sortBy, search, genre_id: genreId }));
+  };
 
   const handleBack = () => navigation.goBack();
 
@@ -325,7 +358,7 @@ const AllBooks = () => {
         showBack
         title="Books"
         count={pagination?.total_contents}
-        showCount={true}
+        showCount={!loading && pagination?.total_contents !== undefined}
         onBack={handleBack}
         // ✅ Search props
         showSearchIcon={true}
@@ -366,67 +399,30 @@ const AllBooks = () => {
 
       <FlatList
         ListHeaderComponent={
-          !hideHeader ? (
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                borderBottomColor: themeColors.gray,
-                borderBottomWidth: 0.5,
-                marginBottom: 10,
-              }}
-            >
-              <Tabs
-                tabs={TABS}
-                activeTab={activeTab}
-                onChange={tab => {
-                  if (activeReactionBookId) {
-                    setActiveReactionBookId(null);
-                  }
-                  setActiveTab(tab);
-
-                  let newSort = 'recent';
-
-                  if (tab === 'Trending') {
-                    newSort = 'trending';
-                  }
-
-                  if (tab === 'Most Rated') {
-                    newSort = 'most_rated';
-                  }
-
-                  if (tab === 'Most Viewed') {
-                    newSort = 'most_viewed';
-                  }
-
-                  setSortBy(newSort);
-
-                  // Close reaction popup when changing tabs
-                  if (activeReactionBookId) {
-                    setActiveReactionBookId(null);
-                  }
-
-                  dispatch(
-                    getBooks({
-                      page: 1,
-                      sort_by: newSort,
-                      search: search,
-                      genre_id: genreId,
-                    }),
-                  );
-                }}
-              />
-              <TouchableOpacity
-                style={styles.addBtn}
-                onPress={() => {
-                  navigation.navigate('AddBook');
+          <>
+            <OngoingBookContestCTA />
+            {!hideHeader ? (
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  borderBottomColor: themeColors.gray,
+                  borderBottomWidth: 0.5,
+                  marginBottom: 10,
                 }}
               >
-                <Plus size={28} />
-              </TouchableOpacity>
-            </View>
-          ) : null
+                <Tabs tabs={TABS} activeTab={activeTab} onChange={tab => {
+                  if (activeReactionBookId) setActiveReactionBookId(null);
+                  setActiveTab(tab);
+                  const newSort = tab === 'Most Rated' ? 'most_rated' : tab === 'Most Viewed' ? 'most_viewed' : 'recent';
+                  setSortBy(newSort);
+                  dispatch(getBooks({ page: 1, sort_by: newSort, search, genre_id: genreId }));
+                }} />
+                <TouchableOpacity style={styles.addBtn} onPress={() => navigation.navigate('AddBook')}><Plus size={28} /></TouchableOpacity>
+              </View>
+            ) : null}
+          </>
         }
         data={loading && page === 1 ? skeletonData : books}
         keyExtractor={(item: any) => item?.id?.toString()}
@@ -470,6 +466,12 @@ const AllBooks = () => {
                   }
                   bookmarked={bookmarkedIds.includes(item?.id)}
                   onBookmark={() => handleBookmark(item?.id)}
+                  showCreatorActions={authUser?.id !== item?.user?.id}
+                  isFollowing={
+                    item?.user?.isFollowing === 1 || item?.user?.isFollowing === true
+                  }
+                  onMessage={() => handleMessageCreator(item)}
+                  onFollow={() => handleFollowCreator(item)}
                   likes={likeCountMap[item?.id] ?? item?.likes_count}
                   views={item?.views}
                   rating={item?.avg_rating ?? '0'}

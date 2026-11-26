@@ -132,6 +132,7 @@ export const handleDeepLink = async (url: string) => {
     // ==========================
     case 'movie':
     case 'movies':
+    case 'unfiltered':
       if (value) {
         navigate('SingleMovieDetails', {
           id: value,

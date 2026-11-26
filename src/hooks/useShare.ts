@@ -43,7 +43,9 @@ export const useShare = (initialData?: ShareProps) => {
 
       switch (type) {
         case 'movie':
-          deepLink = `${BASE_URL}/movies/${value}`;
+          // Canonical public URL for unfiltered content. Keep /movies links
+          // supported by the deep-link parser for previously shared URLs.
+          deepLink = `${BASE_URL}/unfiltered/${value}`;
           break;
         case 'book':
           deepLink = `${BASE_URL}/books/${value}`;

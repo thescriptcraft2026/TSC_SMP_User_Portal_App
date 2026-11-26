@@ -49,6 +49,7 @@ import { useToast } from '../../components/Toast/ToastProvider';
 import { verticalScaleSize } from '../../utils/responsive';
 import { clearLogs } from '../../utils/simpleCrashLogger';
 import { useShare } from '../../hooks/useShare';
+import CreatorInlineActions from '../../components/CreatorInlineActions';
 
 const ParticipateDetails = () => {
   const navigation = useNavigation<any>();
@@ -591,7 +592,7 @@ const ParticipateDetails = () => {
                     </Text>
                   </View>
                 </TouchableOpacity>
-                {/* <FollowButton isFollowing={false} onPress={() => {}} /> */}
+                <CreatorInlineActions creator={selectedParticipant?.user} />
               </View>
             </View>
           </View>

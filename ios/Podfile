@@ -1,6 +1,6 @@
 # ENV['RCT_NEW_ARCH_ENABLED'] = '0'
-use_modular_headers!
-
+ENV['RCT_USE_PREBUILT_RNCORE'] = '0'
+ENV['RCT_USE_PREBUILT_RNDEPENDENCIES'] = '0'
 # Resolve react_native_pods.rb with node to allow for hoisting
 def node_require(script)
   # Resolve script with node to allow for hoisting
@@ -49,11 +49,17 @@ end
 target 'TheScriptCraft' do
   config = use_native_modules!
 
+  # Firebase's Swift pods require module maps when linked as static libraries.
+  # Keep this scoped to Firebase support pods to avoid React Native runtime
+  # module-map collisions under Xcode 26.
+  pod 'GoogleUtilities', :modular_headers => true
+  pod 'RecaptchaInterop', :modular_headers => true
+  pod 'Firebase/Messaging', :modular_headers => true
+  pod 'FirebaseMessaging', :modular_headers => true
+
   use_react_native!(
     :path => config[:reactNativePath],
     # An absolute path to your application root.
-    :new_arch_enabled => false,   # 👈 ADD THIS LINE (IMPORTANT)
-    :fabric_enabled => false,     # 👈 ADD THIS ALSO
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
 
@@ -64,5 +70,6 @@ target 'TheScriptCraft' do
       :mac_catalyst_enabled => false,
       # :ccache_enabled => true
     )
+
   end
 end

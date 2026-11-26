@@ -21,6 +21,7 @@ import {
 } from '../../../../redux/slices/opportunitySlice';
 import Location from '../../../../assets/SVG/Location';
 import RenderHtml from 'react-native-render-html';
+import CreatorInlineActions from '../../../../components/CreatorInlineActions';
 
 type Props = {
   data: any;
@@ -134,6 +135,7 @@ const OpportunityCard = ({ data, onPress }: Props) => {
                 {getDisplayTime(data?.createdAt, data?.updatedAt)}
               </Text>
             </View>
+            <CreatorInlineActions creator={data?.posted_user} />
           </View>
           <StatusBadge status={status} />
         </View>

@@ -16,6 +16,7 @@ import {
   Dimensions,
   TouchableWithoutFeedback,
   Keyboard,
+  Linking,
 } from 'react-native';
 import {
   RichEditor,
@@ -49,6 +50,8 @@ import { sanitizeTitle } from '../../utils/sanitizeTitle';
 
 type FormData = {
   title: string;
+  author_name: string;
+  more_info_link: string;
   description: string;
   content: string;
   images: string[] | any;
@@ -109,6 +112,8 @@ const AddBook = () => {
   } = useForm<FormData>({
     defaultValues: {
       title: book?.title || '',
+      author_name: book?.author_name || '',
+      more_info_link: book?.more_info_link || '',
       description: book?.description || '',
       content: book?.story || '',
       images: book?.image ? [{ uri: book.image }] : [],
@@ -198,6 +203,14 @@ const AddBook = () => {
         formData.append('description', data.description.trim());
       }
 
+      if (data.author_name?.trim()) {
+        formData.append('author_name', data.author_name.trim());
+      }
+
+      if (data.more_info_link?.trim()) {
+        formData.append('more_info_link', data.more_info_link.trim());
+      }
+
       if (data.genere) {
         formData.append('genre_id', String(data.genere));
       }
@@ -260,6 +273,8 @@ const AddBook = () => {
     // ✅ reset form
     reset({
       title: book?.title || '',
+      author_name: book?.author_name || '',
+      more_info_link: book?.more_info_link || '',
       description: book?.description || '',
       content: book?.story || '',
       images: book?.image ? [{ uri: book.image }] : [],
@@ -320,6 +335,37 @@ const AddBook = () => {
                   value={value}
                   onChangeText={(text) => onChange(sanitizeTitle(text))}
                   error={errors.title?.message}
+                />
+              )}
+            />
+            <Controller
+              control={control}
+              name="author_name"
+              render={({ field: { onChange, value } }) => (
+                <FloatingInputTwo
+                  label="Author Name (Optional)"
+                  value={value}
+                  onChangeText={onChange}
+                  error={errors.author_name?.message}
+                />
+              )}
+            />
+            <Controller
+              control={control}
+              name="more_info_link"
+              rules={{
+                validate: (value) =>
+                  !value?.trim() ||
+                  /^https?:\/\/\S+$/i.test(value.trim()) ||
+                  'Enter a valid URL starting with http:// or https://',
+              }}
+              render={({ field: { onChange, value } }) => (
+                <FloatingInputTwo
+                  label="More Info Link (Optional)"
+                  value={value}
+                  onChangeText={onChange}
+                  keyboardType="url"
+                  error={errors.more_info_link?.message}
                 />
               )}
             />

@@ -454,6 +454,9 @@ const contestSlice = createSlice({
       // Get Contest status
       .addCase(getContestStatusThunk.pending, state => {
         state.contestStatusLoading = true;
+        // Do not reuse the previous contest's participation result while the
+        // newly selected contest is being checked.
+        state.contestStatus = null;
         state.contestStatusError = null;
       })
 

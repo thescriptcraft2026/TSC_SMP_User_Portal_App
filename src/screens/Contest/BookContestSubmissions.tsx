@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   FlatList,
   StyleSheet,
@@ -8,15 +8,16 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import FastImage from 'react-native-fast-image';
 
 import AuthHeader from '../../components/Header/AuthHeader';
 import { themeColors } from '../../theme/colors';
 import { Fonts } from '../../constants/Fonts';
-import { LOCAL_BOOK_CONTEST } from '../../data/localBookContest';
 import api from '../../../Instance/Instance';
+import { useToast } from '../../components/Toast/ToastProvider';
+import CreatorInlineActions from '../../components/CreatorInlineActions';
 
 const BookContestSubmissions = () => {
   const navigation = useNavigation<any>();
@@ -25,30 +26,61 @@ const BookContestSubmissions = () => {
   const [liked, setLiked] = useState<string[]>([]);
   const [ratings, setRatings] = useState<Record<string, number>>({});
   const [remoteBooks, setRemoteBooks] = useState<any[] | null>(null);
-  const contestId = route.params?.contestId;
+  const { show } = useToast();
+  const contestId = route.params?.contestId || route.params?.id || route.params?.contest?.id;
+  const contestTitle = route.params?.contestTitle || 'Book Contest';
 
-  useEffect(() => {
-    if (!contestId || contestId === LOCAL_BOOK_CONTEST.id) return;
-    api.get(`/contest/book-submission/${contestId}`)
-      .then(response => {
-        const bundles = response?.data?.data?.submissions || [];
-        setRemoteBooks(bundles.flatMap((bundle: any) => (bundle.books || []).map((book: any) => ({ ...book, submissionUser: bundle.user }))));
-      })
-      .catch(() => setRemoteBooks([]));
-  }, [contestId]);
+  useFocusEffect(React.useCallback(() => {
+    let active = true;
+    setRemoteBooks(null);
+    const load = async () => {
+      try {
+        const response = await api.get(`/contest/book-submission/${contestId}?_=${Date.now()}`);
+        const payload = response?.data?.data;
+        const bundles = Array.isArray(payload) ? payload : (payload?.submissions || []);
+        const entries = bundles.flatMap((bundle: any) => [
+          ...(bundle.books || []).map((book: any) => ({ ...book, content_type: 'book', submissionUser: bundle.user })),
+          ...(bundle.synopses || []).map((synopsis: any) => ({ ...synopsis, content_type: 'synopsis', submissionUser: bundle.user })),
+        ]);
+        if (active) setRemoteBooks(entries);
+      } catch {
+        if (active) setRemoteBooks([]);
+      }
+    };
+    load();
+    return () => { active = false; };
+  }, [contestId]));
   const submissions = useMemo(() => {
     const selectedBooks = route.params?.selectedBooks || [];
-    const source = remoteBooks?.length
-      ? remoteBooks
-      : selectedBooks.length
-      ? selectedBooks
-      : [
-          { id: 'demo-1', title: 'A Story Worth Telling', user: { name: 'You' }, image: '' },
-          { id: 'demo-2', title: 'The Last Draft', user: { name: 'Community Author' }, image: '' },
-          { id: 'demo-3', title: 'Letters from Home', user: { name: 'Featured Writer' }, image: '' },
-        ];
+    const selectedSynopses = route.params?.selectedSynopses || [];
+    const fallback = [...selectedBooks.map((item: any) => ({ ...item, content_type: 'book' })), ...selectedSynopses.map((item: any) => ({ ...item, content_type: 'synopsis' }))];
+    const source = remoteBooks && remoteBooks.length ? remoteBooks : fallback;
     return source.filter((book: any) => String(book.title || '').toLowerCase().includes(search.toLowerCase()));
-  }, [route.params?.selectedBooks, remoteBooks, search]);
+  }, [route.params?.selectedBooks, route.params?.selectedSynopses, remoteBooks, search]);
+
+  React.useEffect(() => {
+    if (!submissions.length) return;
+    setLiked(submissions.filter((book: any) => book.isLiked).map((book: any) => String(book.id)));
+    const serverRatings = Object.fromEntries(
+      submissions
+        .filter((book: any) => book.contest_rating)
+        .map((book: any) => [String(book.id), Number(book.contest_rating)]),
+    );
+    setRatings(current => ({ ...current, ...serverRatings }));
+  }, [submissions]);
+
+  const averageRating = useMemo(() => {
+    const averages = submissions.map((book: any) => Number(book.contest_rating_average || 0)).filter(Boolean);
+    if (!averages.length) return '0.0';
+    return (averages.reduce((sum: number, value: number) => sum + value, 0) / averages.length).toFixed(1);
+  }, [submissions]);
+
+  const getBookImage = (book: any) => {
+    const image = book?.image || book?.cover_image || book?.coverImage || book?.book?.image;
+    if (!image || typeof image !== 'string') return null;
+    if (image.startsWith('http://') || image.startsWith('https://')) return image;
+    return `https://dvj1oyyzss68w.cloudfront.net/${image.replace(/^\/+/, '')}`;
+  };
 
   const toggleLike = (id: string) => setLiked(current => current.includes(id) ? current.filter(item => item !== id) : [...current, id]);
 
@@ -63,11 +95,15 @@ const BookContestSubmissions = () => {
   };
 
   const handleRating = async (id: string, value: number) => {
+    const previousRating = ratings[id] || 0;
+    setRatings(current => ({ ...current, [id]: value }));
     try {
-      await api.post(`/actions/rate/${id}`, { rating: value });
-      setRatings(current => ({ ...current, [id]: value }));
+      const response = await api.post(`/actions/rate/${id}`, { rating: value, contest_id: contestId });
+      const savedRating = Number(response?.data?.data?.rating || value);
+      setRatings(current => ({ ...current, [id]: savedRating }));
     } catch {
-      // Keep the previous rating when the action cannot be persisted.
+      setRatings(current => ({ ...current, [id]: previousRating }));
+      show({ type: 'error', title: 'Unable to save contest rating.' });
     }
   };
 
@@ -76,16 +112,18 @@ const BookContestSubmissions = () => {
       <AuthHeader showBack title="Book Submissions" onBack={() => navigation.goBack()} />
       <FlatList
         data={submissions}
-        keyExtractor={(item: any) => String(item.id)}
+        keyExtractor={(item: any, index: number) =>
+          `${item.id}-${item.contentId || item.book_id || item.content_id || index}`
+        }
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <View>
             <View style={styles.hero}>
               <View style={styles.pill}><Ionicons name="book-outline" size={14} color={themeColors.primary} /><Text style={styles.pillText}>BOOK CONTEST</Text></View>
-              <Text style={styles.title}>{LOCAL_BOOK_CONTEST.title}</Text>
-              <Text style={styles.subtitle}>Browse entries, support writers, and rate the books you love.</Text>
-              <View style={styles.stats}><Text style={styles.stat}><Text style={styles.statStrong}>{submissions.length}</Text> submissions</Text><Text style={styles.stat}><Text style={styles.statStrong}>4.8</Text> average rating</Text></View>
+              <Text style={styles.title}>{contestTitle}</Text>
+              <Text style={styles.subtitle}>Browse entries, support writers, and rate the books and synopses you love.</Text>
+              <View style={styles.stats}><Text style={styles.stat}><Text style={styles.statStrong}>{submissions.length}</Text> submissions</Text><Text style={styles.stat}><Text style={styles.statStrong}>{averageRating}</Text> average rating</Text></View>
             </View>
             <View style={styles.searchBox}><Ionicons name="search-outline" size={19} color="#8C8C95" /><TextInput value={search} onChangeText={setSearch} placeholder="Search submissions" placeholderTextColor="#777780" style={styles.searchInput} /></View>
             <Text style={styles.sectionTitle}>Community submissions</Text>
@@ -97,10 +135,21 @@ const BookContestSubmissions = () => {
           const rating = ratings[id] || 0;
           return (
             <View style={styles.card}>
-              <FastImage source={item.image ? { uri: item.image } : require('../../assets/images/book-1.png')} style={styles.cover} resizeMode="cover" />
+              <View style={styles.coverColumn}>
+                <FastImage
+                  source={getBookImage(item) ? { uri: getBookImage(item) as string } : require('../../assets/images/book-1.png')}
+                  style={styles.cover}
+                  resizeMode={FastImage.resizeMode.cover}
+                  onError={() => undefined}
+                />
+              </View>
               <View style={styles.cardBody}>
+                <Text style={styles.contentType}>{item.content_type === 'synopsis' ? 'SYNOPSIS' : 'BOOK'}</Text>
                 <Text style={styles.bookTitle} numberOfLines={2}>{item.title}</Text>
-                <Text style={styles.author}>{item.user?.name || item.author || 'Author'}</Text>
+                <View style={styles.creatorRow}>
+                  <Text style={styles.author}>{item.submissionUser?.name || item.user?.name || item.author || 'Author'}</Text>
+                  <CreatorInlineActions creator={item.submissionUser || item.user} />
+                </View>
                 <View style={styles.actionRow}>
                   <TouchableOpacity style={styles.action} onPress={() => handleLike(id)}><Ionicons name={isLiked ? 'heart' : 'heart-outline'} size={20} color={isLiked ? '#FF5964' : '#fff'} /><Text style={styles.actionText}>{isLiked ? 'Liked' : 'Like'}</Text></TouchableOpacity>
                   <View style={styles.rating}><Text style={styles.rateLabel}>Rate</Text>{[1, 2, 3, 4, 5].map(value => <TouchableOpacity key={value} onPress={() => handleRating(id, value)}><Ionicons name={value <= rating ? 'star' : 'star-outline'} size={17} color={themeColors.primary} /></TouchableOpacity>)}</View>
@@ -132,9 +181,12 @@ const styles = StyleSheet.create({
   sectionTitle: { color: '#fff', fontFamily: Fonts.Bold, fontSize: 16, marginBottom: 10 },
   card: { flexDirection: 'row', backgroundColor: '#17171C', borderRadius: 16, padding: 9, marginBottom: 10 },
   cover: { width: 92, height: 125, borderRadius: 10, backgroundColor: '#27272D' },
+  coverColumn: { width: 92 },
   cardBody: { flex: 1, paddingLeft: 12, paddingVertical: 3 },
   bookTitle: { color: '#fff', fontFamily: Fonts.Bold, fontSize: 16, lineHeight: 20 },
+  contentType: { color: themeColors.primary, fontFamily: Fonts.Bold, fontSize: 10, letterSpacing: 1, marginBottom: 4 },
   author: { color: '#9A9AA3', fontFamily: Fonts.Regular, fontSize: 12, marginTop: 5 },
+  creatorRow: { flexDirection: 'row', alignItems: 'center', minHeight: 28 },
   actionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 14 },
   action: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   actionText: { color: '#C5C5CB', fontFamily: Fonts.SemiBold, fontSize: 12 },

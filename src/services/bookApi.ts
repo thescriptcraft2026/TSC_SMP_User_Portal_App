@@ -6,10 +6,12 @@ export const getAllBooks = async (
   sort_by = 'recent',
   search = '',
   genre_id = '',
+  user_id = '',
+  limit = 100,
 ) => {
   const params: any = {
     page,
-    limit: 10,
+    limit,
     type,
     sort_by,
   };
@@ -23,6 +25,10 @@ export const getAllBooks = async (
     params.genre_id = genre_id;
   }
 
+  if (user_id) {
+    params.user_id = user_id;
+  }
+
   const res = await api.get(`/content`, {
     params,
   });
@@ -33,6 +39,11 @@ export const getAllBooks = async (
 // ✅ GET BY ID
 export const getBookById = async (id: string) => {
   const res = await api.get(`/content/${id}`);
+  return res?.data?.data;
+};
+
+export const getMyBookContestSubmission = async (contestId: string | number) => {
+  const res = await api.get(`/contest/book-submission/${contestId}/mine`);
   return res?.data?.data;
 };
 

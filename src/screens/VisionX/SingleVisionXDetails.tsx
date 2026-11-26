@@ -59,6 +59,8 @@ import {
 } from '../../redux/slices/visionXSlice';
 import { createReport, getReports } from '../../redux/slices/reportSlice';
 import ReportModal from '../../components/Modals/ReportModal';
+import CreatorConnectionModal from '../../components/Modals/CreatorConnectionModal';
+import CreatorInlineActions from '../../components/CreatorInlineActions';
 import { ratingAction, updateRatingLocal } from '../../redux/slices/bookSlice';
 import { ReactionType } from '../../hooks/useEmojiReaction';
 import { useHandleLike } from '../../hooks/useHandleLike';
@@ -85,6 +87,7 @@ const SingleVisionXDetails = () => {
   const [expanded, setExpanded] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [connectionPromptVisible, setConnectionPromptVisible] = useState(false);
 
   const { bookmarkedIds, likedIds } = useSelector(
     (state: any) => state.actions,
@@ -120,6 +123,13 @@ const SingleVisionXDetails = () => {
   };
 
   const isFollowing = selectedVisionX?.user?.isFollowing === 1;
+
+  useEffect(() => {
+    if (loading || !selectedVisionX?.user?.id || isOwnPost) return;
+
+    const timer = setTimeout(() => setConnectionPromptVisible(true), 10000);
+    return () => clearTimeout(timer);
+  }, [visionxId, loading, selectedVisionX?.user?.id, isOwnPost]);
 
   const isAlreadyReported = selectedVisionX?.user_reports?.length > 0;
 
@@ -661,6 +671,10 @@ const SingleVisionXDetails = () => {
             >
               {selectedVisionX?.user?.name}
             </Text>
+            <CreatorInlineActions
+              creator={selectedVisionX?.user}
+              onRefresh={() => dispatch(getVisionXByIdThunk(visionxId))}
+            />
             <Text
               style={[
                 styles.date,
@@ -752,6 +766,14 @@ const SingleVisionXDetails = () => {
         post={selectedVisionX} // 🔥 important
         onSubmit={handleReport}
         reportType="VISIONX"
+      />
+      <CreatorConnectionModal
+        visible={connectionPromptVisible && !isOwnPost}
+        creator={selectedVisionX?.user}
+        onClose={() => setConnectionPromptVisible(false)}
+        onUpdated={() => dispatch(getVisionXByIdThunk(selectedVisionX.id))}
+        onError={message => show({ type: 'error', title: message })}
+        onSuccess={message => show({ type: 'success', title: message })}
       />
     </SafeAreaView>
   );

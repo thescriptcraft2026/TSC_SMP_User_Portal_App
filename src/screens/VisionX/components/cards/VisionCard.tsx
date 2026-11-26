@@ -28,6 +28,7 @@ import {
 import { getDisplayTime } from '../../../../utils/timeAgo';
 import EmbeddedMedia from '../../../../components/Media/EmbeddedMedia';
 import Star from '../../../../assets/SVG/Star';
+import CreatorInlineActions from '../../../../components/CreatorInlineActions';
 
 type Props = {
   url: string;
@@ -35,6 +36,7 @@ type Props = {
   avatar?: string;
   name?: string;
   user_name?: string;
+  creator?: any;
   likes?: any;
   views?: number | any;
   rating?: number;
@@ -82,6 +84,7 @@ const VisionCard = forwardRef<VisionCardHandle, Props>(
       avatar,
       name,
       user_name,
+      creator,
       likes,
       views,
       rating,
@@ -300,6 +303,7 @@ const VisionCard = forwardRef<VisionCardHandle, Props>(
                 </Text>
               </View>
             </TouchableOpacity>
+            <CreatorInlineActions creator={creator} style={{ marginTop: 3 }} />
 
           </View>
 
@@ -597,6 +601,8 @@ const styles = StyleSheet.create({
   userRow: {
     flex: 1,
     marginLeft: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
 
   userName: {

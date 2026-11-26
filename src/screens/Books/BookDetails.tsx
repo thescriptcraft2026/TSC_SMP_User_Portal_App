@@ -2,6 +2,7 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  Linking,
   Platform,
   RefreshControl,
   ScrollView,
@@ -31,10 +32,13 @@ import { themeColors } from '../../theme/colors';
 import GenreBadge from '../../components/Badges/GenreBadge';
 import RatingModal from '../../components/Modals/RatingModal';
 import User from '../../assets/SVG/User';
+import Chat from '../../assets/SVG/Chat';
+import UserPlus from '../../assets/SVG/UserPlus';
+import CheckTwo from '../../assets/SVG/CheckTwo';
+import BookIcon from '../../assets/SVG/Book';
 import { useShare } from '../../hooks/useShare';
 import HeartActive from '../../assets/SVG/HeartActive';
 import ActionBar from '../../components/AcrtionBar/ActionBar';
-import FollowButton from '../../components/Buttons/FollowButton';
 import EyeTwo from '../../assets/SVG/EyeTwo';
 import { useDispatch, useSelector } from 'react-redux';
 import {
@@ -58,6 +62,7 @@ import {
 import { useToast } from '../../components/Toast/ToastProvider';
 import { follow, unFollow } from '../../redux/slices/profileSlice';
 import ReportModal from '../../components/Modals/ReportModal';
+import CreatorConnectionModal from '../../components/Modals/CreatorConnectionModal';
 import { createReport, getReports } from '../../redux/slices/reportSlice';
 import PrimaryButton from '../../components/Buttons/PrimaryButton';
 import BookCard from './components/cards/BookCard';
@@ -89,6 +94,7 @@ const BookDetails = () => {
   const [expanded, setExpanded] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [connectionPromptVisible, setConnectionPromptVisible] = useState(false);
 
   const { selectedBook, loading, suggestedBooks, suggestedLoading } =
     useSelector((state: any) => state.book);
@@ -106,7 +112,9 @@ const BookDetails = () => {
     setExpanded(false);
   }, [bookId]);
 
-  const isFollowing = selectedBook?.user?.isFollowing === 1;
+  const isFollowing =
+    selectedBook?.user?.isFollowing === 1 ||
+    selectedBook?.user?.isFollowing === true;
 
   const backgroundColor = useMemo(
     () => (isDark ? themeColors.black : themeColors.appBackground),
@@ -272,6 +280,13 @@ const BookDetails = () => {
     }
   }, [bookId, selectedBook?.id, dispatch]);
 
+  useEffect(() => {
+    if (loading || !selectedBook?.user?.id || isOwnPost) return;
+
+    const timer = setTimeout(() => setConnectionPromptVisible(true), 10000);
+    return () => clearTimeout(timer);
+  }, [bookId, loading, selectedBook?.user?.id, isOwnPost]);
+
   // 🔥 FOLLOW
   const handleFollow = async () => {
     if (!selectedBook?.user?.id) return;
@@ -283,6 +298,24 @@ const BookDetails = () => {
     await dispatch(getBookByIdThunk(selectedBook.id));
 
     show({ type: 'success', title: res?.message });
+  };
+
+  const handleMessageCreator = async () => {
+    const creator = selectedBook?.user;
+    if (!creator?.id) return;
+
+    navigation.navigate('ChatRoom', {
+      chatId: creator?.chat_id || selectedBook?.chat_id || null,
+      isNewChat: !(creator?.chat_id || selectedBook?.chat_id),
+      user: {
+        id: creator.id,
+        userId: creator.id,
+        user_name: creator.user_name,
+        name: creator.name,
+        avatar: creator.profile_photo_path || creator.avatar,
+        is_online: creator.is_online,
+      },
+    });
   };
 
   const { handleShare } = useShare({
@@ -470,6 +503,30 @@ const BookDetails = () => {
                   type={"Book"}
                 />
               </View>
+              {!isOwnPost && selectedBook?.user?.id && (
+                <View style={styles.imageActionStack}>
+                  <TouchableOpacity
+                    accessibilityLabel="Message creator"
+                    accessibilityRole="button"
+                    style={styles.imageActionButton}
+                    onPress={handleMessageCreator}
+                  >
+                    <Chat size={20} color={themeColors.white} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    accessibilityLabel={isFollowing ? 'Following creator' : 'Follow creator'}
+                    accessibilityRole="button"
+                    style={styles.imageActionButton}
+                    onPress={handleFollow}
+                  >
+                    {isFollowing ? (
+                      <CheckTwo size={20} color={themeColors.primary} />
+                    ) : (
+                      <UserPlus size={20} color={themeColors.white} />
+                    )}
+                  </TouchableOpacity>
+                </View>
+              )}
 
               {/* TITLE SECTION */}
               <View style={styles.titleContainer}>
@@ -483,6 +540,25 @@ const BookDetails = () => {
                 >
                   {selectedBook?.title}
                 </Text>
+                {selectedBook?.author_name && (
+                  <View style={styles.bookAuthorRow}>
+                    <BookIcon
+                      width={18}
+                      height={18}
+                      color={themeColors.primary as string}
+                    />
+                    <Text style={styles.bookAuthorName}>
+                      {selectedBook.author_name}
+                    </Text>
+                  </View>
+                )}
+                {selectedBook?.more_info_link && (
+                  <TouchableOpacity
+                    onPress={() => Linking.openURL(selectedBook.more_info_link)}
+                  >
+                    <Text style={styles.moreInfoLink}>Purchase</Text>
+                  </TouchableOpacity>
+                )}
                 <View
                   style={{
                     flexDirection: 'row',
@@ -879,6 +955,14 @@ const BookDetails = () => {
         onSubmit={handleReport}
         reportType="BOOKS" // ✅ add this
       />
+      <CreatorConnectionModal
+        visible={connectionPromptVisible && !isOwnPost}
+        creator={selectedBook?.user}
+        onClose={() => setConnectionPromptVisible(false)}
+        onUpdated={() => dispatch(getBookByIdThunk(selectedBook.id))}
+        onError={message => show({ type: 'error', title: message })}
+        onSuccess={message => show({ type: 'success', title: message })}
+      />
     </SafeAreaView>
   );
 };
@@ -921,6 +1005,27 @@ const styles = StyleSheet.create({
 
   author: {
     fontSize: 16,
+    fontFamily: Fonts.SemiBold,
+  },
+
+  bookAuthorName: {
+    marginTop: 0,
+    fontSize: 17,
+    color: themeColors.white,
+    fontFamily: Fonts.SemiBold,
+  },
+
+  bookAuthorRow: {
+    marginTop: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+  },
+
+  moreInfoLink: {
+    marginTop: 6,
+    fontSize: 14,
+    color: themeColors.primary,
     fontFamily: Fonts.SemiBold,
   },
 
@@ -991,6 +1096,26 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 10,
+  },
+
+  imageActionStack: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 106 : 86,
+    right: 16,
+    zIndex: 12,
+    alignItems: 'center',
+    gap: 8,
+  },
+
+  imageActionButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(20,20,20,0.72)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
   },
 
   contestBadge: {

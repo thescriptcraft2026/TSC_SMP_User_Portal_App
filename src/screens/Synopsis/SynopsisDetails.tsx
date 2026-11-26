@@ -36,6 +36,7 @@ import { useShare } from '../../hooks/useShare';
 import HeartActive from '../../assets/SVG/HeartActive';
 import ActionBar from '../../components/AcrtionBar/ActionBar';
 import FollowButton from '../../components/Buttons/FollowButton';
+import CreatorInlineActions from '../../components/CreatorInlineActions';
 import EyeTwo from '../../assets/SVG/EyeTwo';
 import { useDispatch, useSelector } from 'react-redux';
 import he from 'he';
@@ -60,6 +61,7 @@ import { follow, unFollow } from '../../redux/slices/profileSlice';
 import { formatDate } from '../../utils/date';
 import GenreBadge from '../../components/Badges/GenreBadge';
 import ReportModal from '../../components/Modals/ReportModal';
+import CreatorConnectionModal from '../../components/Modals/CreatorConnectionModal';
 import BookDetailsSkeleton from '../../components/skeleton/BookDetailsSkeleton';
 import RenderHTML from 'react-native-render-html';
 import PrimaryButton from '../../components/Buttons/PrimaryButton';
@@ -82,6 +84,7 @@ const SynopsisDetails = () => {
   const [showReactions, setShowReactions] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
   const [expanded, setExpanded] = useState(false);
+  const [connectionPromptVisible, setConnectionPromptVisible] = useState(false);
   const route = useRoute<any>();
   const synopsisId = route.params?.synopsisId || route.params?.id;
   const dispatch = useDispatch<any>();
@@ -113,6 +116,13 @@ const SynopsisDetails = () => {
   const isFollowing = selectedSynopses?.user?.isFollowing === 1;
   // const likeCount = selectedSynopses?.likes_count ?? 0;
   const isAlreadyReported = selectedSynopses?.isReported;
+
+  useEffect(() => {
+    if (loading || !selectedSynopses?.user?.id || isOwnPost) return;
+
+    const timer = setTimeout(() => setConnectionPromptVisible(true), 10000);
+    return () => clearTimeout(timer);
+  }, [synopsisId, loading, selectedSynopses?.user?.id, isOwnPost]);
 
   // 🔥 CLEAN HTML
   const decodedHTML = useMemo(() => {
@@ -594,22 +604,24 @@ const SynopsisDetails = () => {
                     justifyContent: 'space-between',
                   }}
                 >
-                  <TouchableOpacity
-                    onPress={() => {
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      flex: 1,
+                    }}
+                  >
+                    <TouchableOpacity
+                      onPress={() => {
                       navigation.navigate('Profile', {
                         username:
                           selectedSynopses?.user?.user_name ||
                           selectedSynopses?.user?.id ||
                           selectedSynopses?.user?.userId,
                       });
-                    }}
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 6,
-                      justifyContent: "space-between"
-                    }}
-                  >
+                      }}
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+                    >
                     <User
                       size={14}
                       color={isDark ? themeColors.gray : themeColors.black}
@@ -625,7 +637,12 @@ const SynopsisDetails = () => {
                     >
                       {selectedSynopses?.user?.name} -
                     </Text>
-                  </TouchableOpacity>
+                    </TouchableOpacity>
+                    <CreatorInlineActions
+                      creator={selectedSynopses?.user}
+                      onRefresh={() => dispatch(getBookByIdThunk(selectedSynopses.id))}
+                    />
+                  </View>
 
                   <Text style={styles.date}>
                     {formatDate(selectedSynopses?.createdAt)}
@@ -795,6 +812,7 @@ const SynopsisDetails = () => {
                         rating={item?.avg_rating ?? '0'}
                         title={item?.title}
                         author={item?.user?.name}
+                        creator={item?.user}
                         handleLike={(reaction?: ReactionType) =>
                           handleLike({
                             id: item.id,
@@ -846,6 +864,14 @@ const SynopsisDetails = () => {
         post={selectedSynopses} // 🔥 important
         onSubmit={handleReport}
         reportType="SYNOPSIS"
+      />
+      <CreatorConnectionModal
+        visible={connectionPromptVisible && !isOwnPost}
+        creator={selectedSynopses?.user}
+        onClose={() => setConnectionPromptVisible(false)}
+        onUpdated={() => dispatch(getBookByIdThunk(selectedSynopses.id))}
+        onError={message => show({ type: 'error', title: message })}
+        onSuccess={message => show({ type: 'success', title: message })}
       />
     </SafeAreaView>
   );

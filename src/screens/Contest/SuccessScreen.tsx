@@ -21,7 +21,8 @@ const SuccessScreen = () => {
   const route = useRoute<any>();
   const { show } = useToast();
 
-  const { contestId, participantId, shareToken, title, bookContest, selectedBooks = [] } = route.params || {};
+  const { contestId, participantId, shareToken, title, bookContest, selectedBooks = [], selectedSynopses = [] } = route.params || {};
+  const selectedCount = selectedBooks.length + selectedSynopses.length;
 
   const [copied, setCopied] = useState(false);
 
@@ -69,7 +70,10 @@ const SuccessScreen = () => {
     if (bookContest) {
       navigation.replace('BookContestSubmissions', {
         contestId,
+        id: contestId,
+        contestTitle: title,
         selectedBooks,
+        selectedSynopses,
       });
       return;
     }
@@ -113,7 +117,7 @@ const SuccessScreen = () => {
         <Text style={styles.title}>{bookContest ? 'Books Submitted' : 'Submission Successful'}</Text>
 
         <Text style={styles.subtitle}>
-          {bookContest ? `${selectedBooks.length} book${selectedBooks.length === 1 ? '' : 's'} submitted to the contest.` : 'Your entry has been submitted successfully.'}
+          {bookContest ? `${selectedCount} item${selectedCount === 1 ? '' : 's'} submitted to the contest.` : 'Your entry has been submitted successfully.'}
         </Text>
 
         {/* Entry Title if available */}
@@ -130,6 +134,12 @@ const SuccessScreen = () => {
           <View style={styles.entryCard}>
             <Text style={styles.entryLabel}>SUBMITTED BOOKS</Text>
             {selectedBooks.map((book: any) => <Text key={book.id} style={styles.entryTitle} numberOfLines={1}>• {book.title}</Text>)}
+          </View>
+        )}
+        {bookContest && selectedSynopses.length > 0 && (
+          <View style={styles.entryCard}>
+            <Text style={styles.entryLabel}>SUBMITTED SYNOPSES</Text>
+            {selectedSynopses.map((synopsis: any) => <Text key={synopsis.id} style={styles.entryTitle} numberOfLines={1}>• {synopsis.title}</Text>)}
           </View>
         )}
 

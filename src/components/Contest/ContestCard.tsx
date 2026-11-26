@@ -41,6 +41,14 @@ type Props = {
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const HORIZONTAL_MARGIN = Math.max(10, SCREEN_WIDTH * 0.02);
+const CONTEST_IMAGE_BASE_URL = 'https://dvj1oyyzss68w.cloudfront.net';
+
+const resolveContestImage = (value: string) => {
+  const image = String(value || '').trim();
+  if (!image || image === 'fallback') return '';
+  if (/^https?:\/\//i.test(image)) return image;
+  return `${CONTEST_IMAGE_BASE_URL}/${image.replace(/^\/+/, '')}`;
+};
 
 const ContestCard = ({
   title,
@@ -64,8 +72,9 @@ const ContestCard = ({
   const ripple = useRef(new Animated.Value(0)).current;
   const extraCount = avatars.length - 3;
 
-  const [imageLoading, setImageLoading] = useState(true);
-  const [imageError, setImageError] = useState(false);
+  const [imageLoading, setImageLoading] = useState(Boolean(image));
+  const [imageError, setImageError] = useState(!image);
+  const imageUri = resolveContestImage(image);
 
   // 🎨 Dynamic Colors
   const bgColor = themeColors.card;
@@ -144,10 +153,10 @@ const ContestCard = ({
       <View style={{ padding: 3.5 }}>
         <FastImage
           source={
-            imageError
+            imageError || !imageUri
               ? FallbackImage
               : {
-                uri: image,
+                uri: imageUri,
                 priority: FastImage.priority.high,
               }
           }
@@ -155,7 +164,6 @@ const ContestCard = ({
           resizeMode={FastImage.resizeMode.cover}
           onLoadStart={() => {
             setImageLoading(true);
-            setImageError(false);
           }}
           onLoad={() => {
             setImageLoading(false);
@@ -389,12 +397,14 @@ const styles = StyleSheet.create({
 
   bookTypeBadge: {
     position: 'absolute',
-    bottom: 68,
+    top: 44,
     left: 14,
     backgroundColor: 'rgba(235,157,8,0.92)',
     borderRadius: 12,
     paddingHorizontal: 8,
     paddingVertical: 3,
+    zIndex: 10,
+    elevation: 10,
   },
 
   bookTypeText: {

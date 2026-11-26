@@ -11,7 +11,7 @@ import { io, Socket } from 'socket.io-client';
 import { addMessage } from '../redux/slices/chatSlice';
 import Config from 'react-native-config';
 
-const DEFAULT_SOCKET_URL = 'https://tscapi.thescriptcraft.com';
+const DEFAULT_SOCKET_URL = 'https://betatscapi.thescriptcraft.com';
 const SOCKET_URL = Config.SOCKET_URL || DEFAULT_SOCKET_URL;
 
 interface TypingUser {

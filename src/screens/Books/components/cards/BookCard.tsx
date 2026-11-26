@@ -14,6 +14,9 @@ import { themeColors } from '../../../../theme/colors';
 import { Fonts } from '../../../../constants/Fonts';
 
 import BookMark from '../../../../assets/SVG/BookMark';
+import Chat from '../../../../assets/SVG/Chat';
+import UserPlus from '../../../../assets/SVG/UserPlus';
+import CheckTwo from '../../../../assets/SVG/CheckTwo';
 import Star from '../../../../assets/SVG/Star';
 import Like from '../../../../assets/SVG/Like';
 import EyeTwo from '../../../../assets/SVG/EyeTwo';
@@ -38,6 +41,10 @@ type Props = {
   onPress?: () => void;
   bookmarked?: boolean;
   onBookmark?: () => void;
+  onMessage?: () => void;
+  onFollow?: () => void;
+  isFollowing?: boolean;
+  showCreatorActions?: boolean;
   likes?: number | any;
   rating?: string;
   title?: string;
@@ -64,6 +71,10 @@ const BookCard = ({
   onPress,
   bookmarked = false,
   onBookmark,
+  onMessage,
+  onFollow,
+  isFollowing = false,
+  showCreatorActions = false,
   likes,
   rating,
   title,
@@ -146,8 +157,9 @@ const BookCard = ({
           style={styles.gradient}
         />
 
-        {/* BOOKMARK */}
-        <TouchableOpacity style={styles.heart} onPress={onBookmark}>
+        <View style={styles.creatorActionStack}>
+          {/* BOOKMARK */}
+          <TouchableOpacity style={styles.heart} onPress={onBookmark}>
           {bookmarked ? (
             <BookMark
               width={responsiveWidth(4.5)}
@@ -158,7 +170,33 @@ const BookCard = ({
           ) : (
             <BookMark width={18} height={18} color="#fff" />
           )}
-        </TouchableOpacity>
+          </TouchableOpacity>
+
+          {showCreatorActions && (
+            <>
+              <TouchableOpacity
+                accessibilityLabel="Message creator"
+                accessibilityRole="button"
+                style={styles.creatorActionButton}
+                onPress={onMessage}
+              >
+                <Chat size={16} color={themeColors.white} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                accessibilityLabel={isFollowing ? 'Following creator' : 'Follow creator'}
+                accessibilityRole="button"
+                style={styles.creatorActionButton}
+                onPress={onFollow}
+              >
+                {isFollowing ? (
+                  <CheckTwo size={16} color={themeColors.primary} />
+                ) : (
+                  <UserPlus size={16} color={themeColors.white} />
+                )}
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
 
         {/* BADGE */}
         <View style={styles.badge}>
@@ -293,14 +331,30 @@ const styles = StyleSheet.create({
   },
 
   heart: {
-    position: 'absolute',
-    top: responsiveHeight(1.2),
-    right: responsiveWidth(2.5),
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(0,0,0,0.45)',
     padding: responsiveWidth(1.6),
     borderRadius: responsiveWidth(6),
+  },
+
+  creatorActionStack: {
+    position: 'absolute',
+    top: responsiveHeight(1.2),
+    right: responsiveWidth(2.5),
+    alignItems: 'center',
+    gap: responsiveHeight(0.3),
+  },
+
+  creatorActionButton: {
+    width: responsiveWidth(9),
+    height: responsiveWidth(9),
+    borderRadius: responsiveWidth(4.5),
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
   },
 
   badge: {
